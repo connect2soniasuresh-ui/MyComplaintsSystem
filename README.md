@@ -1,4 +1,4 @@
-# Grievance Desk
+# LakkaBank Grievance Desk
 
 A complaints website for every banking service. Customers lodge a complaint, get a reference number and track it. Complaints officers work through a shared queue with a 30-day clock, following the RBI rule that a bank must reply within 30 days before a customer can go to the RBI Ombudsman.
 
@@ -45,4 +45,4 @@ With `config.js` left empty the site runs in **demo mode**: it works, but compla
 - **Spam protection.** Add a CAPTCHA (Supabase supports Cloudflare Turnstile and hCaptcha) to stop automated submissions.
 - **Staff accounts.** Turn on multi-factor authentication for staff in Supabase.
 - **Custom domain.** Use the bank's own domain (GitHub Pages → Custom domain, with HTTPS enforced) so customers can trust the address.
-- **Bank name.** "Grievance Desk" is a placeholder name.
+- **Bank name.** The site is branded LakkaBank; search index.html and app.js for "LakkaBank" to change it.

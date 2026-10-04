@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="description" content="Lodge and track complaints about any banking service.">
-<title>Grievance Desk</title>
+<meta name="description" content="LakkaBank Grievance Desk: lodge and track complaints about any LakkaBank service.">
+<title>LakkaBank Grievance Desk</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23A87A22' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <div class="wrap">
   <header class="mast">
     <div class="brand">
-      <div class="seal" aria-hidden="true">GD</div>
-      <div><h1>Grievance Desk</h1><small>Complaints for every banking service, in one place</small></div>
+      <div class="seal" aria-hidden="true">LB</div>
+      <div><h1>LakkaBank</h1><small>Grievance Desk · Complaints for every LakkaBank service, in one place</small></div>
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-lodge" data-tab="lodge" aria-selected="true">Lodge a complaint</button>
@@ -66,10 +66,10 @@
             <p class="label" style="margin:0">Why we ask, and who sees it</p>
             <div style="overflow-x:auto"><table><tbody>
               <tr><td>Name</td><td>To match the complaint to your account.</td></tr>
-              <tr><td>Mobile</td><td>To contact you about this complaint, and to confirm it's you when you track it. Use the number registered with the bank.</td></tr>
+              <tr><td>Mobile</td><td>To contact you about this complaint, and to confirm it's you when you track it. Use the number registered with LakkaBank.</td></tr>
               <tr><td>Email</td><td>Optional. For written replies.</td></tr>
             </tbody></table></div>
-            <p style="margin:0" class="muted">Only you and the bank's complaints staff can see this complaint. Staff see your contact details masked until they need to contact you, and every time they view them it's recorded. We don't use them for marketing.</p>
+            <p style="margin:0" class="muted">Only you and LakkaBank's complaints staff can see this complaint. Staff see your contact details masked until they need to contact you, and every time they view them it's recorded. We don't use them for marketing.</p>
           </div>
           <div class="row">
             <div class="field"><label for="f-name">Full name</label><input type="text" id="f-name" required maxlength="80" autocomplete="name"></div>
@@ -80,7 +80,7 @@
 
         <fieldset>
           <legend><span class="step">4 / 4</span>Confirm and submit</legend>
-          <label class="check"><input type="checkbox" id="f-consent"> The details above are true. I agree that the bank may use my name, mobile number and email only to investigate this complaint and contact me about it.</label>
+          <label class="check"><input type="checkbox" id="f-consent"> The details above are true. I agree that LakkaBank may use my name, mobile number and email only to investigate this complaint and contact me about it.</label>
           <div class="actions">
             <button class="btn" type="submit" id="submitBtn">Submit complaint</button>
             <span class="err" id="formErr" role="alert"></span>
@@ -123,7 +123,7 @@
   <section class="view" id="view-staff" hidden>
     <div id="staffSignin">
       <h2>Staff sign-in</h2>
-      <p class="lede">For the bank's complaints officers. Ask your administrator for an account.</p>
+      <p class="lede">For LakkaBank's complaints officers. Ask your administrator for an account.</p>
       <form class="signin" id="signinForm" novalidate>
         <div class="field"><label for="s-email">Work email</label><input type="email" id="s-email" autocomplete="username"></div>
         <div class="field"><label for="s-pass">Password</label><input type="password" id="s-pass" autocomplete="current-password"></div>
@@ -147,7 +147,7 @@
   </section>
 
   <footer class="foot">
-    <span>Never share your PIN, OTP, CVV or password with anyone, including bank staff.</span>
+    <span>Never share your PIN, OTP, CVV or password with anyone, including LakkaBank staff.</span>
     <span>RBI Ombudsman: <span class="mono">cms.rbi.org.in</span> · 14448</span>
   </footer>
 </div>
@@ -155,7 +155,7 @@
 <dialog id="dlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
-<script src="config.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="config.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

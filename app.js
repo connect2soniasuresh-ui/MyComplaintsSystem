@@ -1,5 +1,5 @@
 "use strict";
-/* Grievance Desk — public site.
+/* LakkaBank Grievance Desk — public site.
    Talks to Supabase through the checked functions in supabase/schema.sql.
    With no config it runs in demo mode: everything stays in this tab. */
 
@@ -13,7 +13,7 @@ const SERVICES = [
   {id:"dep", name:"Fixed & recurring deposits", sub:"Maturity, interest", issues:["Maturity amount not credited","Wrong interest paid","Premature closure problem","TDS deducted wrongly"]},
   {id:"chq", name:"Cheques & drafts", sub:"Clearing, returns", issues:["Cheque not cleared","Cheque returned wrongly","Cheque book not received","Demand draft not issued"]},
   {id:"branch", name:"Branch service", sub:"Staff, queues, documents", issues:["Staff behaviour","Service refused or long wait","Documents not accepted","Senior citizen or disability access"]},
-  {id:"third", name:"Insurance & investments", sub:"Sold through the bank", issues:["Product mis-sold","Policy not issued","Product added without consent","Redemption delayed"]},
+  {id:"third", name:"Insurance & investments", sub:"Sold through LakkaBank", issues:["Product mis-sold","Policy not issued","Product added without consent","Redemption delayed"]},
   {id:"locker", name:"Safe deposit lockers", sub:"Allotment, rent, access", issues:["Allotment delayed","Rent dispute","Cannot access locker"]},
   {id:"kyc", name:"KYC, nomination & records", sub:"Updates and changes", issues:["KYC update pending","Nomination not registered","Name, address or mobile change pending"]},
 ];
@@ -91,7 +91,7 @@ function updateGuard(el){
   const asksOnly = kinds.length === 1 && kinds[0].startsWith("a request");
   box.innerHTML = staff
     ? `<span><b>This message contains ${esc(listKinds(kinds))}.</b> Staff must never ask for or repeat OTPs, PINs, CVVs, passwords or full card, account or Aadhaar numbers.${asksOnly ? " Rephrase the message." : ""}</span>${asksOnly ? "" : `<button type="button" data-scrub>Remove them for me</button>`}`
-    : `<span><b>This looks like ${esc(listKinds(kinds))}.</b> The bank never needs it here, and the complaint can't be sent with it.</span><button type="button" data-scrub>Remove it for me</button>`;
+    : `<span><b>This looks like ${esc(listKinds(kinds))}.</b> LakkaBank never needs it here, and the complaint can't be sent with it.</span><button type="button" data-scrub>Remove it for me</button>`;
   return true;
 }
 let guardTimer;
@@ -178,7 +178,7 @@ function errText(e){
   if (m === "locked") return "Too many tries with the wrong mobile number. For your security, tracking for this reference is paused for an hour.";
   if (m === "consent_required") return "Tick the confirmation box to submit.";
   if (m === "invalid:mobile") return "Enter a valid 10-digit mobile number.";
-  if (m === "not_waiting") return "The bank isn't waiting for a reply on this complaint any more. Search again to see its latest status.";
+  if (m === "not_waiting") return "LakkaBank isn't waiting for a reply on this complaint any more. Search again to see its latest status.";
   if (m === "not_staff" || e?.code === "42501") return "This account isn't on the staff list. Ask your administrator to add you.";
   if (/invalid login credentials/i.test(m)) return "The email or password is wrong.";
   if (e?.code === "23514" || e?.code === "22P02" || e?.code === "22007") return "Some details weren't accepted. Check the form and try again.";
@@ -303,8 +303,8 @@ function renderTracked(){
       <div style="display:flex;gap:10px;align-items:center">${clock(c)} ${pill(st)}</div>
     </div>
     <div class="track">${steps.map(([t,done,wait])=>`<div class="${wait?"wait":done?"done":""}">${t}</div>`).join("")}</div>
-    <ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"Bank":"You"}</span>${h.status&&h.by==="bank"?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul>
-    ${st==="info" ? `<div class="field"><label for="reply">Your reply</label><textarea id="reply" maxlength="2000" data-scan placeholder="Answer the bank's question here"></textarea><div class="actions"><button class="btn" id="replyBtn" type="button">Send reply</button><span class="err" id="replyErr" role="alert"></span></div></div>` : ""}
+    <ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"LakkaBank":"You"}</span>${h.status&&h.by==="bank"?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul>
+    ${st==="info" ? `<div class="field"><label for="reply">Your reply</label><textarea id="reply" maxlength="2000" data-scan placeholder="Answer LakkaBank's question here"></textarea><div class="actions"><button class="btn" id="replyBtn" type="button">Send reply</button><span class="err" id="replyErr" role="alert"></span></div></div>` : ""}
     ${(isLate(c) || st==="resolved") ? `<div class="alert info"><strong>Not satisfied?</strong>${isLate(c)?"We haven't replied within 30 days.":"If you disagree with our reply,"} You can complain to the RBI Ombudsman online at <span class="mono">cms.rbi.org.in</span> or call 14448. Quote ${esc(c.ref)}.</div>` : ""}
   </article></div>`;
   const rb = $("#replyBtn");
@@ -425,7 +425,7 @@ function renderDetail(){
       <div><dl class="kv">${kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <p style="margin:10px 0 0;font-size:13px" class="muted">${contact ? "Contact details shown. This view has been recorded." : `Contact details are masked. <button class="reveal" id="d-reveal" type="button">Show contact details</button> only when you're about to contact the customer. Each view is recorded.`} Viewed ${Number(c.contactViews)+(contact?1:0)} time${Number(c.contactViews)+(contact?1:0)===1?"":"s"} so far.</p></div>
       <div><p class="label">Customer's account of the problem</p><p style="white-space:pre-wrap;margin:6px 0 0">${esc(c.description)}</p></div>
-      <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"Bank":"Customer"}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
+      <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"LakkaBank":"Customer"}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
       <div style="display:grid;gap:12px;border-top:1px solid var(--line);padding-top:18px">
         <p class="label">Send an update to the customer</p>
         <div class="field"><label for="d-status">Set status to</label><select id="d-status">${Object.entries(STATUS).filter(([k])=>k!=="received").map(([k,v])=>`<option value="${k}" ${k===c.status?"selected":""}>${v}</option>`).join("")}</select></div>
