@@ -1,0 +1,666 @@
+<title>Grievance Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a bank-counter app. Slim masthead with tabs; lodge form beside a "how we handle it" rail; staff queue as a dense ledger table with a detail dialog. */
+:root{
+  --paper:#F2F5F4; --surface:#FFFFFF; --ink:#13262A; --muted:#566B70; --line:#D3DDDD;
+  --petrol:#1C4E5D; --petrol-ink:#FFFFFF; --petrol-soft:#E1ECEE; --brass:#A87A22;
+  --ok:#2F7A4F; --ok-soft:#E2F1E7; --warn:#9A6A08; --warn-soft:#FAEFD6; --bad:#B23A30; --bad-soft:#F8E3E0;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#0D1719; --surface:#142226; --ink:#E2EBEB; --muted:#93A7AB; --line:#283A3E;
+  --petrol:#6FB2C3; --petrol-ink:#0B1A1D; --petrol-soft:#1B3238; --brass:#D9A94F;
+  --ok:#6CC490; --ok-soft:#173226; --warn:#E3B04F; --warn-soft:#33290F; --bad:#EE8277; --bad-soft:#3A1C19;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0D1719; --surface:#142226; --ink:#E2EBEB; --muted:#93A7AB; --line:#283A3E;
+  --petrol:#6FB2C3; --petrol-ink:#0B1A1D; --petrol-soft:#1B3238; --brass:#D9A94F;
+  --ok:#6CC490; --ok-soft:#173226; --warn:#E3B04F; --warn-soft:#33290F; --bad:#EE8277; --bad-soft:#3A1C19;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-stretch:112%;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:22px;font-weight:800;letter-spacing:.01em}
+h2{font-size:26px;font-weight:800}
+h3{font-size:15px;font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+a{color:var(--petrol)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--petrol);outline-offset:2px}
+
+/* masthead */
+.mast{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-block:20px 0;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.seal{width:38px;height:38px;border-radius:50%;border:2px solid var(--brass);display:grid;place-items:center;color:var(--brass);font:800 13px var(--f-display);font-stretch:112%}
+.brand small{display:block;color:var(--muted);font-size:12.5px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px 11px;font-weight:600;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--petrol)}
+.tab .count{font-family:var(--f-mono);font-size:12px;background:var(--petrol-soft);color:var(--petrol);border-radius:10px;padding:1px 7px;margin-left:6px}
+.banner{margin-top:16px;padding:10px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--warn);font-size:13.5px}
+
+section.view{padding-top:28px}
+.lede{max-width:62ch;margin:6px 0 0;color:var(--muted)}
+
+/* lodge layout */
+.lodge{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;margin-top:24px;align-items:start}
+@media (max-width:860px){.lodge{grid-template-columns:1fr}}
+form{display:grid;gap:28px}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:14px}
+legend{font-family:var(--f-display);font-stretch:112%;font-weight:600;font-size:17px;padding:0;margin-bottom:12px;display:flex;gap:10px;align-items:baseline}
+legend .step{font-family:var(--f-mono);font-size:12px;color:var(--brass);font-weight:500}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.svc{position:relative}
+.svc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.svc label{display:flex;flex-direction:column;gap:2px;height:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);cursor:pointer;font-weight:600;font-size:14px;line-height:1.3}
+.svc label span{font-weight:400;font-size:12px;color:var(--muted)}
+.svc input:checked+label{border-color:var(--petrol);box-shadow:inset 0 0 0 1px var(--petrol);background:var(--petrol-soft)}
+.svc input:focus-visible+label{outline:2px solid var(--petrol);outline-offset:2px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.field{display:grid;gap:5px}
+.field>label{font-size:13.5px;font-weight:600}
+.field .hint{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=tel],input[type=email],input[type=date],input[type=number],input[type=search],select,textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;min-height:40px}
+textarea{min-height:120px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--petrol);outline:none;box-shadow:0 0 0 3px var(--petrol-soft)}
+.inr{position:relative}
+.inr::before{content:"₹";position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.inr input{padding-left:26px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px}
+.check input{margin-top:4px;accent-color:var(--petrol)}
+.alert{padding:12px 14px;border-radius:var(--r);font-size:13.5px;border-left:3px solid currentColor}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.info{background:var(--petrol-soft);color:var(--ink);border-color:var(--petrol)}
+.alert strong{display:block;margin-bottom:2px}
+.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{border:0;border-radius:var(--r);padding:11px 18px;font-weight:600;cursor:pointer;background:var(--petrol);color:var(--petrol-ink)}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--petrol);border:1px solid var(--line)}
+.err{color:var(--bad);font-size:13.5px}
+
+/* rail */
+.rail{display:grid;gap:22px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+@media (max-width:860px){.rail{position:static}}
+.rail ol{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.rail li{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.rail li b{font-family:var(--f-mono);font-weight:500;color:var(--brass);font-size:12.5px}
+.never{border:1px dashed var(--bad);border-radius:var(--r);padding:12px 14px;font-size:13.5px}
+.never b{color:var(--bad)}
+
+/* receipt */
+.receipt{margin-top:24px;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:grid;gap:12px}
+.receipt .ref{font:500 26px var(--f-mono);letter-spacing:.04em;color:var(--petrol)}
+
+/* status pills + progress */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-received{background:var(--petrol-soft);color:var(--petrol)}
+.s-review{background:var(--warn-soft);color:var(--warn)}
+.s-info{background:var(--bad-soft);color:var(--bad)}
+.s-resolved{background:var(--ok-soft);color:var(--ok)}
+.urgent{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--bad)}
+.clock{font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.clock.late{color:var(--bad);font-weight:500}
+.meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;width:80px}
+.meter i{display:block;height:100%;background:var(--petrol)}
+.meter.late i{background:var(--bad)}
+
+/* my complaints */
+.list{display:grid;gap:14px;margin-top:22px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:grid;gap:14px}
+.card-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+.card-head .ref{font-family:var(--f-mono);font-weight:500;color:var(--petrol)}
+.track{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:12px;color:var(--muted)}
+.track div{border-top:3px solid var(--line);padding-top:6px}
+.track .done{border-color:var(--petrol);color:var(--ink)}
+.track .wait{border-color:var(--bad);color:var(--bad)}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:13.5px}
+.hist li{display:grid;grid-template-columns:110px 1fr;gap:12px}
+.hist time{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.hist .who{font-weight:600}
+.hist p{margin:2px 0 0;white-space:pre-wrap}
+@media (max-width:520px){.hist li{grid-template-columns:1fr;gap:2px}}
+.empty{margin-top:22px;border:1px dashed var(--line);border-radius:var(--r);padding:32px 24px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--ink);margin-bottom:6px}
+
+/* staff */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:22px}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);padding:14px 16px}
+.tile .n{font:800 28px var(--f-display);font-stretch:112%;font-variant-numeric:tabular-nums;display:block;margin-top:2px}
+.tile.alarm .n{color:var(--bad)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.filters>*{flex:1 1 170px;width:auto}
+.tablebox{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--petrol-soft)}
+td .ref{font-family:var(--f-mono);color:var(--petrol);font-weight:500}
+td.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);padding:0;width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 48px)}
+dialog::backdrop{background:rgba(8,20,22,.55)}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.dlg-body{padding:18px 22px;display:grid;gap:20px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+@media (max-width:520px){.kv{grid-template-columns:1fr}.kv dd{margin-bottom:6px}}
+.x{background:none;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px}
+/* guardrails */
+.guard{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:9px 12px;border-radius:var(--r);background:var(--bad-soft);color:var(--bad);font-size:13px}
+.guard b{font-weight:600}
+.guard button{border:1px solid currentColor;background:transparent;color:inherit;border-radius:var(--r);padding:4px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.flagged{border-color:var(--bad)!important;box-shadow:0 0 0 3px var(--bad-soft)!important}
+.note-ok{font-size:12.5px;color:var(--ok)}
+.privacy{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;font-size:13.5px;display:grid;gap:8px}
+.privacy table{min-width:0;font-size:13px}
+.privacy td{padding:5px 8px 5px 0;border:0;vertical-align:top}
+.privacy td:first-child{font-weight:600;white-space:nowrap}
+.reveal{background:none;border:0;color:var(--petrol);font-weight:600;cursor:pointer;padding:0;font-size:13px;text-decoration:underline}
+@media (prefers-reduced-motion:no-preference){.card,.receipt{animation:rise .25s ease-out}@keyframes rise{from{transform:translateY(4px)}to{transform:none}}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="brand">
+      <div class="seal" aria-hidden="true">GD</div>
+      <div><h1>Grievance Desk</h1><small>Complaints for every banking service, in one place</small></div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-lodge" data-tab="lodge" aria-selected="true">Lodge a complaint</button>
+      <button class="tab" role="tab" id="tab-mine" data-tab="mine" aria-selected="false">My complaints<span class="count" id="mineCount">0</span></button>
+      <button class="tab" role="tab" id="tab-queue" data-tab="queue" aria-selected="false" hidden>Staff queue<span class="count" id="queueCount">0</span></button>
+    </nav>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+
+  <!-- LODGE -->
+  <section class="view" id="view-lodge">
+    <h2>Tell us what went wrong</h2>
+    <p class="lede">You get a reference number as soon as you submit. We reply within 30 days. If we don't, or you're unhappy with our reply, you can take the complaint to the RBI Ombudsman.</p>
+
+    <div class="lodge" id="lodgeWrap">
+      <form id="form" novalidate>
+        <fieldset>
+          <legend><span class="step">1 / 4</span>Which service is it about?</legend>
+          <div class="svc-grid" id="svcGrid"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">2 / 4</span>What happened?</legend>
+          <div class="field">
+            <label for="f-issue">Issue</label>
+            <select id="f-issue" required><option value="">Choose a service first</option></select>
+          </div>
+          <div class="alert bad" id="fraudNote" hidden>
+            <strong>Block the card or account first</strong>
+            Use the mobile app, or call the number on the back of your card. Report within 3 working days: under RBI rules your liability is zero for third-party fraud reported in that window.
+          </div>
+          <div class="row">
+            <div class="field"><label for="f-acct">Account or card, last 4 digits</label><input type="text" id="f-acct" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="4821"><span class="hint" id="acctHint">Only the last 4 digits</span></div>
+            <div class="field"><label for="f-date">Transaction date</label><input type="date" id="f-date"></div>
+            <div class="field"><label for="f-amt">Amount involved</label><div class="inr"><input type="number" id="f-amt" min="0" step="0.01" placeholder="2,500"></div></div>
+          </div>
+          <div class="field"><label for="f-txn">Transaction reference (UTR, RRN or cheque number)</label><input type="text" id="f-txn" maxlength="40" autocomplete="off" spellcheck="false" data-scan placeholder="UTR 4129 8830 1176"><span class="hint">On your SMS alert, statement or UPI app history. Leave blank if there isn't one.</span></div>
+          <div class="field"><label for="f-desc">Describe the problem</label><textarea id="f-desc" required maxlength="3000" data-scan placeholder="On 2 October I paid ₹2,500 by UPI to a merchant. The money left my account but the merchant says they never received it…"></textarea></div>
+          <div class="field"><label for="f-want">What would put this right?</label><input type="text" id="f-want" maxlength="200" data-scan placeholder="Refund of ₹2,500 to my savings account"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">3 / 4</span>How do we reach you?</legend>
+          <div class="privacy" id="privacy">
+            <p class="label" style="margin:0">Why we ask, and who sees it</p>
+            <div style="overflow-x:auto"><table><tbody>
+              <tr><td>Name</td><td>To match the complaint to your account.</td></tr>
+              <tr><td>Mobile</td><td>To call or text you about this complaint only. Use the number registered with the bank.</td></tr>
+              <tr><td>Email</td><td>Optional. For written replies.</td></tr>
+            </tbody></table></div>
+            <p style="margin:0" class="muted">Only you and the bank's complaints staff can see this complaint. Staff see your contact details masked until they need to contact you. We don't use them for marketing.</p>
+          </div>
+          <div class="row">
+            <div class="field"><label for="f-name">Full name</label><input type="text" id="f-name" required maxlength="80" autocomplete="name"></div>
+            <div class="field"><label for="f-mobile">Registered mobile</label><input type="tel" id="f-mobile" required maxlength="16" autocomplete="tel" placeholder="98xxxxxx10"><span class="hint">10-digit Indian mobile number</span></div>
+            <div class="field"><label for="f-email">Email (optional)</label><input type="email" id="f-email" maxlength="120" autocomplete="email"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">4 / 4</span>Confirm and submit</legend>
+          <label class="check"><input type="checkbox" id="f-consent"> The details above are true. I agree that the bank may use my name, mobile number and email only to investigate this complaint and contact me about it.</label>
+          <div class="actions">
+            <button class="btn" type="submit" id="submitBtn">Submit complaint</button>
+            <span class="err" id="formErr" role="alert"></span>
+          </div>
+        </fieldset>
+      </form>
+
+      <aside class="rail">
+        <div>
+          <p class="label">What happens next</p>
+          <ol>
+            <li><b>Day 0</b><span>You get a reference number right away.</span></li>
+            <li><b>Day 1–7</b><span>A complaints officer reviews it and may ask you for documents.</span></li>
+            <li><b>Day 30</b><span>Latest date for our final reply.</span></li>
+            <li><b>After 30</b><span>No reply, or unhappy with it? Escalate to the RBI Ombudsman at <span class="mono">cms.rbi.org.in</span>.</span></li>
+          </ol>
+        </div>
+        <div class="never"><b>We will never ask for</b> your PIN, OTP, CVV, full card or account number, Aadhaar, PAN or internet banking password. Don't put them in this form. If you type one, the form flags it and won't submit until it's removed.</div>
+        <div class="never" style="border-color:var(--line)">No document uploads. If we need proof, such as a statement, we'll tell you how to share it safely at a branch or by secure email.</div>
+      </aside>
+    </div>
+
+    <div id="receipt" hidden></div>
+  </section>
+
+  <!-- MINE -->
+  <section class="view" id="view-mine" hidden>
+    <h2>My complaints</h2>
+    <p class="lede">Track progress and read the bank's replies. If we ask for more information, reply here.</p>
+    <div id="mineList"></div>
+  </section>
+
+  <!-- QUEUE -->
+  <section class="view" id="view-queue" hidden>
+    <h2>Staff queue</h2>
+    <p class="lede">All complaints from customers. Unauthorised-transaction cases are marked urgent. The 30-day clock runs from the date a complaint was lodged.</p>
+    <div class="tiles" id="tiles"></div>
+    <div class="filters">
+      <input type="search" id="q" placeholder="Search reference, name or mobile" aria-label="Search">
+      <select id="fStatus" aria-label="Filter by status"></select>
+      <select id="fSvc" aria-label="Filter by service"></select>
+    </div>
+    <div id="queueBody"></div>
+  </section>
+</div>
+
+<dialog id="dlg"></dialog>
+
+<script>
+const SERVICES = [
+  {id:"acct", name:"Savings & current accounts", sub:"Charges, interest, freezes", issues:["Wrong charge or deduction","Interest not credited","Account frozen or blocked","Statement or passbook error","Account closure delayed"]},
+  {id:"debit", name:"Debit cards & ATMs", sub:"Cash, card, ATM", issues:["Cash not dispensed but account debited","!Unauthorised transaction on debit card","Card blocked or not received","Excess ATM charges"]},
+  {id:"credit", name:"Credit cards", sub:"Billing, disputes, fees", issues:["!Unauthorised transaction on credit card","Billing dispute","Late fee or interest dispute","Card closure not processed","Conduct of recovery agent"]},
+  {id:"pay", name:"UPI, NEFT, IMPS & RTGS", sub:"Transfers and payments", issues:["Debited but not credited to beneficiary","Failed transaction, refund pending","!Money sent to wrong account","Transaction limit problem"]},
+  {id:"digital", name:"Internet & mobile banking", sub:"Login, OTP, app errors", issues:["Cannot log in","OTP not received","App error during a transaction","!Phishing or fraud attempt"]},
+  {id:"loan", name:"Loans", sub:"Home, personal, vehicle, gold", issues:["EMI debited wrongly","Interest rate not revised","Foreclosure or prepayment charges","Property documents or NOC not returned","Conduct of recovery agent"]},
+  {id:"dep", name:"Fixed & recurring deposits", sub:"Maturity, interest", issues:["Maturity amount not credited","Wrong interest paid","Premature closure problem","TDS deducted wrongly"]},
+  {id:"chq", name:"Cheques & drafts", sub:"Clearing, returns", issues:["Cheque not cleared","Cheque returned wrongly","Cheque book not received","Demand draft not issued"]},
+  {id:"branch", name:"Branch service", sub:"Staff, queues, documents", issues:["Staff behaviour","Service refused or long wait","Documents not accepted","Senior citizen or disability access"]},
+  {id:"third", name:"Insurance & investments", sub:"Sold through the bank", issues:["Product mis-sold","Policy not issued","Product added without consent","Redemption delayed"]},
+  {id:"locker", name:"Safe deposit lockers", sub:"Allotment, rent, access", issues:["Allotment delayed","Rent dispute","Cannot access locker"]},
+  {id:"kyc", name:"KYC, nomination & records", sub:"Updates and changes", issues:["KYC update pending","Nomination not registered","Name, address or mobile change pending"]},
+];
+const SVC = Object.fromEntries(SERVICES.map(s=>[s.id,s]));
+const STATUS = {received:"Received", review:"Under review", info:"Waiting for you", resolved:"Resolved"};
+const SLA = 30, DAY = 864e5;
+
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = iso => new Date(iso).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});
+const fmtDT = iso => new Date(iso).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const inr = n => n==null||n==="" ? "—" : "₹" + Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
+const daysOpen = c => Math.floor(((c.status==="resolved" ? new Date(c.updatedAt) : new Date()) - new Date(c.createdAt))/DAY);
+const isLate = c => c.status!=="resolved" && daysOpen(c) > SLA;
+const pill = s => `<span class="pill s-${s}">${STATUS[s]}</span>`;
+function clock(c){
+  const d = daysOpen(c), late = isLate(c);
+  if (c.status==="resolved") return `<span class="clock">Closed in ${d} day${d===1?"":"s"}</span>`;
+  return `<span class="clock ${late?"late":""}">${late ? `${d-SLA} day${d-SLA===1?"":"s"} past 30` : `Day ${d} of 30`}</span>`;
+}
+function meter(c){
+  const pct = Math.min(100, daysOpen(c)/SLA*100);
+  return `<div class="meter ${isLate(c)?"late":""}"><i style="width:${c.status==="resolved"?100:pct}%"></i></div>`;
+}
+function makeRef(){
+  const d = new Date(), p = n=>String(n).padStart(2,"0");
+  const r = Math.random().toString(36).slice(2,6).toUpperCase();
+  return `GD-${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}-${r}`;
+}
+
+/* ---------- guardrails: confidential details ----------
+   Secrets (OTP, CVV, PIN, passwords) are removed outright.
+   Identifiers (card, Aadhaar, PAN, account numbers) keep only their last 4 characters. */
+const luhn = d => { let s=0, alt=false; for (let i=d.length-1;i>=0;i--){ let n=+d[i]; if(alt){n*=2;if(n>9)n-=9} s+=n; alt=!alt } return s%10===0; };
+const GUARDS = [
+  {kind:"an OTP",          secret:true, re:/\b(?:otp|one[- ]?time ?pass(?:word|code)?)\b\D{0,8}?(?<s>\d{4,8})\b/gi},
+  {kind:"a CVV",           secret:true, re:/\b(?:cvv2?|cvc)\b\D{0,10}?(?<s>\d{3,4})\b/gi},
+  {kind:"a PIN",           secret:true, re:/\b(?:atm |upi |card |m)?pin\b(?!\s*code)\D{0,10}?(?<s>\d{4,6})\b/gi},
+  {kind:"a password",      secret:true, re:/\b(?:password|passcode|pwd|login password)\b\s*(?:is|:|=|-)\s*(?<s>(?=\S*[\d@#$%!&*])\S{4,})/gi},
+  {kind:"an Aadhaar number",            re:/\b(?:aadhaa?r|uidai?|uid)\b\D{0,15}?(?<s>[2-9]\d{3}[ -]?\d{4}[ -]?\d{4})\b/gi},
+  {kind:"a full card number",           re:/(?<s>\b\d(?:[ -]?\d){12,18}\b)/g, test: s => luhn(s.replace(/\D/g,""))},
+  {kind:"an Aadhaar number",            re:/(?<![\d][ -]?)(?<s>\b[2-9]\d{3} \d{4} \d{4}\b)(?![ -]?\d)/g},
+  {kind:"a PAN",                        re:/(?<s>\b[A-Z]{3}[PCHFATBLJG][A-Z]\d{4}[A-Z]\b)/gi},
+  {kind:"a full account number",        re:/\b(?:a\/c|acc(?:ount)?|acct)\.?(?:\s*(?:no\.?|number))?\s*(?:is|:|#|-)?\s*(?<s>\d{9,18})\b/gi},
+];
+const STAFF_ASK = /\b(?:share|send|tell|give|provide|confirm|enter|reply with|need)\b[^.?!\n]{0,40}\b(?:otp|pin|cvv|password|card number|aadhaa?r|pan)\b/i;
+const keep4 = s => { const d = s.replace(/[^\dA-Z]/gi,""); return "•".repeat(Math.max(0,d.length-4)) + d.slice(-4); };
+
+function scan(text, staff){
+  const found = new Set();
+  for (const g of GUARDS) for (const m of text.matchAll(g.re)) if (!g.test || g.test(m.groups.s)) found.add(g.kind);
+  if (staff && STAFF_ASK.test(text)) found.add("a request for confidential details");
+  return [...found];
+}
+function scrub(text){
+  for (const g of GUARDS) text = text.replace(g.re, (...a) => {
+    const full = a[0], s = a.at(-1).s;
+    if (g.test && !g.test(s)) return full;
+    return full.replace(s, g.secret ? "[removed]" : keep4(s));
+  });
+  return text;
+}
+const maskPhone = m => String(m||"").replace(/\d(?=(?:\D*\d){4})/g,"•");
+const maskEmail = e => e ? e.replace(/^(.)[^@]*(@.*)$/, "$1•••$2") : "";
+const listKinds = k => k.length < 2 ? k[0] : k.slice(0,-1).join(", ") + " and " + k.at(-1);
+
+function updateGuard(el){
+  const staff = el.hasAttribute("data-staff");
+  const kinds = scan(el.value, staff);
+  let box = el.nextElementSibling?.classList.contains("guard") ? el.nextElementSibling : null;
+  el.classList.toggle("flagged", kinds.length > 0);
+  el.setAttribute("aria-invalid", String(kinds.length > 0));
+  if (!kinds.length){ box?.remove(); return false; }
+  if (!box){ box = document.createElement("div"); box.className = "guard"; box.setAttribute("role","alert"); el.after(box); }
+  const asksOnly = kinds.length === 1 && kinds[0].startsWith("a request");
+  box.innerHTML = staff
+    ? `<span><b>This message contains ${esc(listKinds(kinds))}.</b> Staff must never ask for or repeat OTPs, PINs, CVVs, passwords or full card, account or Aadhaar numbers.${asksOnly ? " Rephrase the message." : ""}</span>${asksOnly ? "" : `<button type="button" data-scrub>Remove them for me</button>`}`
+    : `<span><b>This looks like ${esc(listKinds(kinds))}.</b> The bank never needs it here, and the complaint can't be sent with it.</span><button type="button" data-scrub>Remove it for me</button>`;
+  return true;
+}
+let guardTimer;
+document.addEventListener("input", e => {
+  if (!e.target.matches("[data-scan]")) return;
+  clearTimeout(guardTimer); guardTimer = setTimeout(() => updateGuard(e.target), 250);
+});
+document.addEventListener("click", e => {
+  if (!e.target.matches("[data-scrub]")) return;
+  const el = e.target.closest(".guard").previousElementSibling;
+  el.value = scrub(el.value); updateGuard(el); el.focus();
+});
+/* returns the first flagged field inside root, or null */
+function blockedField(root){
+  let first = null;
+  root.querySelectorAll("[data-scan]").forEach(el => { if (updateGuard(el) && !first) first = el; });
+  return first;
+}
+
+/* last-4 field: keep digits only; if a full number is pasted, keep the last 4 */
+$("#f-acct").addEventListener("input", e => {
+  const d = e.target.value.replace(/\D/g,"");
+  const hint = $("#acctHint");
+  if (d.length > 4){ e.target.value = d.slice(-4); hint.textContent = "We kept only the last 4 digits. Never enter your full number."; hint.className = "hint note-ok"; }
+  else { e.target.value = d; if (!d.length){ hint.textContent = "Only the last 4 digits"; hint.className = "hint"; } }
+});
+
+/* ---------- state ---------- */
+const S = { db:null, user:null, uid:null, staff:false, live:false, mine:{}, all:[], tab:"lodge", readOnly:false };
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+function setTab(t){
+  S.tab = t;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===t)));
+  ["lodge","mine","queue"].forEach(v => $("#view-"+v).hidden = v!==t);
+  try{ sessionStorage.setItem("gd-tab", t) }catch(e){}
+}
+
+/* ---------- form ---------- */
+$("#svcGrid").innerHTML = SERVICES.map(s => `
+  <div class="svc"><input type="radio" name="svc" id="svc-${s.id}" value="${s.id}"><label for="svc-${s.id}">${esc(s.name)}<span>${esc(s.sub)}</span></label></div>`).join("");
+$("#svcGrid").addEventListener("change", e => {
+  const s = SVC[e.target.value];
+  $("#f-issue").innerHTML = `<option value="">Choose the issue</option>` + s.issues.map(i => `<option value="${esc(i)}">${esc(i.replace(/^!/,""))}</option>`).join("");
+  $("#fraudNote").hidden = true;
+});
+$("#f-issue").addEventListener("change", e => $("#fraudNote").hidden = !e.target.value.startsWith("!"));
+
+$("#form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("#formErr"); err.textContent = "";
+  const svc = document.querySelector('input[name="svc"]:checked')?.value;
+  const issueRaw = $("#f-issue").value, acct = $("#f-acct").value.trim();
+  const problems = [];
+  if (!svc) problems.push("choose a service");
+  if (!issueRaw) problems.push("choose the issue");
+  if (acct && !/^\d{4}$/.test(acct)) problems.push("enter exactly 4 digits for the account or card");
+  if ($("#f-desc").value.trim().length < 20) problems.push("describe the problem in at least 20 characters");
+  if (!/^[\p{L} .'-]{2,80}$/u.test($("#f-name").value.trim())) problems.push("enter your name using letters only");
+  if (!/^(?:\+?91|0)?[6-9]\d{9}$/.test($("#f-mobile").value.replace(/[\s-]/g,""))) problems.push("enter a valid 10-digit mobile number");
+  const em = $("#f-email").value.trim();
+  if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) problems.push("check the email address");
+  if (!$("#f-consent").checked) problems.push("tick the confirmation box");
+  const flagged = blockedField($("#form"));
+  if (flagged){ err.textContent = "Remove the confidential details flagged in red before submitting."; flagged.focus(); return; }
+  if (problems.length){ err.textContent = "To submit, " + problems.join(", ") + "."; return; }
+
+  const now = new Date().toISOString(), ref = makeRef();
+  const c = {
+    ref, createdAt: now, updatedAt: now, service: svc,
+    issue: issueRaw.replace(/^!/,""), urgent: issueRaw.startsWith("!"),
+    acct, txnDate: $("#f-date").value, amount: $("#f-amt").value ? Number($("#f-amt").value) : null,
+    txnRef: $("#f-txn").value.trim(), description: $("#f-desc").value.trim(), outcome: $("#f-want").value.trim(),
+    name: $("#f-name").value.trim(), mobile: $("#f-mobile").value.trim(), email: $("#f-email").value.trim(),
+    status: "received", history: [{at: now, by: "customer", status: "received", note: "Complaint lodged."}]
+  };
+  const btn = $("#submitBtn"); btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    await saveMine(ref, c, true);
+    showReceipt(c);
+    $("#form").reset(); $("#acctHint").textContent = "Only the last 4 digits"; $("#acctHint").className = "hint"; $("#f-issue").innerHTML = `<option value="">Choose a service first</option>`; $("#fraudNote").hidden = true;
+  } catch(ex) {
+    err.textContent = writeError(ex);
+  } finally { btn.disabled = false; btn.textContent = "Submit complaint"; }
+});
+
+function writeError(ex){
+  if (ex?.code === "invalid_argument") return "Your access to this page doesn't allow lodging complaints. Ask the page owner for Contributor access, then try again.";
+  if (ex?.code === "quota_exceeded") return "The complaints store is full. Ask the page owner to archive old complaints.";
+  return "The complaint couldn't be saved because the connection dropped. Check your connection and submit again.";
+}
+
+function showReceipt(c){
+  $("#lodgeWrap").hidden = true;
+  const r = $("#receipt"); r.hidden = false;
+  r.innerHTML = `<div class="receipt">
+    <p class="label">Complaint received · ${esc(fmtDT(c.createdAt))}</p>
+    <div class="ref">${esc(c.ref)}</div>
+    <p style="margin:0">Keep this reference number. Quote it if you call or visit a branch. We'll reply by <strong>${esc(fmtDate(new Date(Date.parse(c.createdAt)+SLA*DAY).toISOString()))}</strong>.</p>
+    ${c.urgent ? `<div class="alert bad"><strong>Marked urgent</strong>Unauthorised-transaction complaints go to the fraud team first.</div>` : ""}
+    ${S.live ? "" : `<div class="alert info">Preview mode: this complaint is held only in this browser tab and isn't sent to the bank.</div>`}
+    <div class="actions"><button class="btn" id="goMine">Track my complaints</button><button class="btn ghost" id="another">Lodge another</button></div>
+  </div>`;
+  $("#goMine").onclick = () => { resetLodge(); setTab("mine"); };
+  $("#another").onclick = resetLodge;
+}
+function resetLodge(){ $("#receipt").hidden = true; $("#lodgeWrap").hidden = false; }
+
+/* ---------- storage ---------- */
+async function saveMine(id, c, isNew){
+  if (!S.live){ S.mine[id] = c; renderAll(); return; }
+  const ref = S.db.doc("complaints/" + S.uid);
+  const snap = await ref.get();
+  if (!snap.exists) await ref.set({ items: { [id]: c } });
+  else await ref.update({ items: { [id]: c } });
+}
+async function saveStaff(owner, id, patch){
+  if (!S.live){
+    const tgt = owner === "local" ? S.mine : null;
+    if (tgt) Object.assign(tgt[id], patch);
+    renderAll(); return;
+  }
+  await S.db.doc("complaints/" + owner).update({ items: { [id]: patch } });
+}
+
+/* ---------- my complaints ---------- */
+function renderMine(){
+  const list = Object.values(S.mine).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  $("#mineCount").textContent = list.filter(c=>c.status!=="resolved").length;
+  const box = $("#mineList");
+  if (!list.length){
+    box.innerHTML = `<div class="empty"><h3>No complaints yet</h3><p>Complaints you lodge appear here with their reference number, a 30-day clock and every reply from the bank.</p><button class="btn" id="emptyGo">Lodge a complaint</button></div>`;
+    $("#emptyGo").onclick = () => setTab("lodge");
+    return;
+  }
+  box.innerHTML = `<div class="list">` + list.map(c => {
+    const st = c.status, steps = [
+      ["Received", true, false],
+      [st==="info" ? "Waiting for you" : "Under review", st!=="received", st==="info"],
+      ["Resolved", st==="resolved", false]];
+    const canEscalate = isLate(c) || st==="resolved";
+    return `<article class="card">
+      <div class="card-head">
+        <div><span class="ref">${esc(c.ref)}</span> ${c.urgent?'<span class="urgent">· Urgent</span>':""}<h3 style="margin-top:4px">${esc(SVC[c.service]?.name)}: ${esc(c.issue)}</h3></div>
+        <div style="display:flex;gap:10px;align-items:center">${clock(c)} ${pill(st)}</div>
+      </div>
+      <div class="track">${steps.map(([t,done,wait])=>`<div class="${wait?"wait":done?"done":""}">${t}</div>`).join("")}</div>
+      <ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"Bank":"You"}</span>${h.status&&h.by==="bank"?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul>
+      ${st==="info" ? `<div class="field"><label for="reply-${esc(c.ref)}">Your reply</label><textarea id="reply-${esc(c.ref)}" maxlength="2000" data-scan placeholder="Answer the bank's question here"></textarea><div class="actions"><button class="btn" data-reply="${esc(c.ref)}">Send reply</button><span class="err" id="rerr-${esc(c.ref)}"></span></div></div>` : ""}
+      ${canEscalate ? `<div class="alert info"><strong>Not satisfied?</strong>${isLate(c)?"We haven't replied within 30 days.":"If you disagree with our reply,"} You can complain to the RBI Ombudsman online at <span class="mono">cms.rbi.org.in</span> or call 14448. Quote ${esc(c.ref)}.</div>` : ""}
+    </article>`;
+  }).join("") + `</div>`;
+  box.querySelectorAll("[data-reply]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.reply, ta = document.getElementById("reply-"+id), note = ta.value.trim();
+    if (!note){ document.getElementById("rerr-"+id).textContent = "Write a reply before sending."; return; }
+    if (updateGuard(ta)){ document.getElementById("rerr-"+id).textContent = "Remove the confidential details flagged in red before sending."; ta.focus(); return; }
+    const c = S.mine[id], now = new Date().toISOString();
+    b.disabled = true;
+    try { await saveMine(id, {status:"review", updatedAt: now, history:[...c.history, {at: now, by:"customer", status:"review", note}]}); }
+    catch(ex){ document.getElementById("rerr-"+id).textContent = writeError(ex); b.disabled = false; }
+  });
+}
+
+/* ---------- staff queue ---------- */
+$("#fStatus").innerHTML = `<option value="">All statuses</option><option value="open">All open</option>` + Object.entries(STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+$("#fSvc").innerHTML = `<option value="">All services</option>` + SERVICES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+["#q","#fStatus","#fSvc"].forEach(s => $(s).addEventListener("input", renderQueue));
+
+function allRows(){
+  if (S.live) return S.all;
+  return Object.values(S.mine).map(c => ({owner:"local", c}));
+}
+function renderQueue(){
+  const rows = allRows();
+  const open = rows.filter(r=>r.c.status!=="resolved");
+  const now = new Date(), month = now.toISOString().slice(0,7);
+  $("#queueCount").textContent = open.length;
+  $("#tiles").innerHTML = [
+    ["Open", open.length, false],
+    ["Urgent and open", open.filter(r=>r.c.urgent).length, open.some(r=>r.c.urgent)],
+    ["Past 30 days", open.filter(r=>isLate(r.c)).length, open.some(r=>isLate(r.c))],
+    ["Resolved this month", rows.filter(r=>r.c.status==="resolved"&&r.c.updatedAt.startsWith(month)).length, false],
+  ].map(([l,n,a])=>`<div class="tile ${a?"alarm":""}"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("");
+
+  const q = $("#q").value.trim().toLowerCase(), fs = $("#fStatus").value, fv = $("#fSvc").value;
+  const shown = rows.filter(({c}) =>
+    (!fs || (fs==="open" ? c.status!=="resolved" : c.status===fs)) &&
+    (!fv || c.service===fv) &&
+    (!q || [c.ref,c.name,c.mobile.replace(/\D/g,"")].join(" ").toLowerCase().includes(q.replace(/^[\d\s+-]+$/, s => s.replace(/\D/g,""))))
+  ).sort((a,b) => (b.c.urgent - a.c.urgent) || ((a.c.status==="resolved") - (b.c.status==="resolved")) || a.c.createdAt.localeCompare(b.c.createdAt));
+
+  const body = $("#queueBody");
+  if (!rows.length){
+    body.innerHTML = `<div class="empty"><h3>The queue is empty</h3><p>New complaints appear here the moment a customer submits one, oldest and most urgent first.</p></div>`;
+    return;
+  }
+  if (!shown.length){ body.innerHTML = `<div class="empty"><h3>No complaints match</h3><p>Clear the search or filters to see the full queue.</p></div>`; return; }
+  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th style="text-align:right">Amount</th><th>30-day clock</th><th>Status</th></tr></thead><tbody>` +
+    shown.map(({owner,c}) => `<tr data-owner="${esc(owner)}" data-id="${esc(c.ref)}" tabindex="0">
+      <td><span class="ref">${esc(c.ref)}</span><br><span class="muted" style="font-size:12px">${esc(fmtDate(c.createdAt))}</span></td>
+      <td>${esc(c.name)}<br><span class="muted mono" style="font-size:12px">${esc(maskPhone(c.mobile))}</span></td>
+      <td>${c.urgent?'<span class="urgent">Urgent · </span>':""}${esc(SVC[c.service]?.name)}<br><span class="muted">${esc(c.issue)}</span></td>
+      <td class="num">${inr(c.amount)}</td>
+      <td>${clock(c)}${meter(c)}</td>
+      <td>${pill(c.status)}</td></tr>`).join("") + `</tbody></table></div>`;
+  body.querySelectorAll("tbody tr").forEach(tr => {
+    const open = () => openDetail(tr.dataset.owner, tr.dataset.id);
+    tr.onclick = open; tr.onkeydown = e => { if (e.key==="Enter") open(); };
+  });
+}
+
+let detailKey = null, revealContact = false;
+function openDetail(owner, id){
+  detailKey = {owner, id}; revealContact = false;
+  renderDetail();
+  const d = $("#dlg"); if (!d.open) d.showModal();
+}
+$("#dlg").addEventListener("close", () => detailKey = null);
+function renderDetail(){
+  if (!detailKey) return;
+  const row = allRows().find(r => r.owner===detailKey.owner && r.c.ref===detailKey.id);
+  if (!row) return;
+  const c = row.c;
+  const kv = [["Lodged", fmtDT(c.createdAt)],["Service", SVC[c.service]?.name],["Issue", c.issue],["Account or card", c.acct ? "•••• "+c.acct : "—"],["Transaction date", c.txnDate ? fmtDate(c.txnDate) : "—"],["Amount", inr(c.amount)],["Transaction ref.", c.txnRef || "—"],["Customer wants", c.outcome || "—"],["Customer", c.name],["Mobile", revealContact ? c.mobile : maskPhone(c.mobile)],["Email", c.email ? (revealContact ? c.email : maskEmail(c.email)) : "—"]];
+  $("#dlg").innerHTML = `
+    <div class="dlg-head"><div><p class="label">${c.urgent?'<span class="urgent">Urgent · </span>':""}${esc(SVC[c.service]?.name)}</p><h2 class="mono" style="font-family:var(--f-mono);font-size:20px;font-weight:500;color:var(--petrol)">${esc(c.ref)}</h2><div style="display:flex;gap:10px;align-items:center;margin-top:6px">${pill(c.status)} ${clock(c)}</div></div><button class="x" id="dlgX" aria-label="Close">×</button></div>
+    <div class="dlg-body">
+      <div><dl class="kv">${kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      ${revealContact ? "" : `<p style="margin:10px 0 0;font-size:13px" class="muted">Contact details are masked. <button class="reveal" id="d-reveal">Show contact details</button> only when you're about to contact the customer.</p>`}</div>
+      <div><p class="label">Customer's account of the problem</p><p style="white-space:pre-wrap;margin:6px 0 0">${esc(c.description)}</p></div>
+      <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"Bank":"Customer"}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
+      <div style="display:grid;gap:12px;border-top:1px solid var(--line);padding-top:18px">
+        <p class="label">Send an update to the customer</p>
+        <div class="field"><label for="d-status">Set status to</label><select id="d-status">${Object.entries(STATUS).filter(([k])=>k!=="received").map(([k,v])=>`<option value="${k}" ${k===c.status?"selected":""}>${v}</option>`).join("")}</select></div>
+        <div class="field"><label for="d-note">Message the customer will see</label><textarea id="d-note" maxlength="2000" data-scan data-staff placeholder="We've raised a chargeback with the beneficiary bank. You'll hear from us within 7 working days."></textarea></div>
+        <div class="actions"><button class="btn" id="d-send">Send update</button><span class="err" id="d-err"></span></div>
+      </div>
+    </div>`;
+  $("#dlgX").onclick = () => $("#dlg").close();
+  const rv = $("#d-reveal"); if (rv) rv.onclick = () => { revealContact = true; const keep = $("#d-note").value; renderDetail(); $("#d-note").value = keep; };
+  $("#d-send").onclick = async () => {
+    const note = $("#d-note").value.trim(), status = $("#d-status").value;
+    if (!note){ $("#d-err").textContent = "Write a message for the customer before sending."; return; }
+    if (updateGuard($("#d-note"))){ $("#d-err").textContent = "Fix the message flagged in red before sending."; return; }
+    const now = new Date().toISOString(); $("#d-send").disabled = true;
+    try { await saveStaff(row.owner, c.ref, {status, updatedAt: now, history:[...c.history, {at: now, by:"bank", status, note}]}); }
+    catch(ex){ $("#d-err").textContent = ex?.code==="invalid_argument" ? "Only editors of this page can update complaints." : "The update couldn't be saved. Check your connection and try again."; $("#d-send").disabled = false; }
+  };
+}
+
+function renderAll(){ renderMine(); if (S.staff) renderQueue(); }
+
+/* ---------- boot ---------- */
+function preview(msg){
+  S.live = false; S.staff = true; $("#tab-queue").hidden = false;
+  const b = $("#banner"); b.hidden = false; b.textContent = msg;
+  renderAll();
+}
+renderAll();
+try{ const t = sessionStorage.getItem("gd-tab"); if (t && t!=="queue") setTab(t); }catch(e){}
+
+(async () => {
+  if (!window.claude?.use){ preview("Preview mode: complaints are kept only in this tab. Open the published page to save them."); return; }
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  const uid = await user?.id();
+  if (!db || !uid){ preview("Sign in to lodge and track complaints. Until then, anything you enter stays in this tab only."); return; }
+  Object.assign(S, {db, user, uid, live:true, staff: await user.canEdit()});
+  db.doc("complaints/" + uid).onSnapshot(snap => {
+    S.mine = snap.exists ? structuredClone(snap.data().items || {}) : {};
+    renderMine();
+  }, () => {});
+  if (S.staff){
+    $("#tab-queue").hidden = false;
+    try{ if (sessionStorage.getItem("gd-tab")==="queue") setTab("queue"); }catch(e){}
+    db.collection("complaints").onSnapshot(snap => {
+      S.all = snap.docs.flatMap(d => Object.values(d.data().items || {}).map(c => ({owner: d.id, c})));
+      renderQueue();
+      if (!$("#d-note")?.value.trim()) renderDetail();
+    }, () => {});
+  }
+})();
+</script>
