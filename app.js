@@ -139,9 +139,9 @@ const API = LIVE ? {
   aiRoute: ref => ai({action: "route", ref}),
 } : DemoAPI();
 
-// The "ai" Edge Function (supabase/functions/ai). Errors come back as {code:"ai", message}.
+// The AI Edge Function (supabase/functions/ai; its name is set in config.js). Errors come back as {code:"ai", message}.
 async function ai(body){
-  const {data, error} = await sb.functions.invoke("ai", {body});
+  const {data, error} = await sb.functions.invoke(CFG.aiFunction || "ai", {body});
   if (!error) return data;
   let detail = null; try { detail = await error.context.json(); } catch(e){}
   throw {code: "ai", message: detail?.error || "unavailable", kinds: detail?.kinds};

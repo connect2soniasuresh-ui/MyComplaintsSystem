@@ -52,7 +52,7 @@ Setup:
 
 1. Get an API key at console.anthropic.com.
 2. In Supabase open **Edge Functions → Secrets** and add `ANTHROPIC_API_KEY` with your key. Optionally add `ALLOWED_ORIGIN` set to your site's address (for example `https://youraccount.github.io`), so only your site can call the function.
-3. Open **Edge Functions → Deploy a new function → Via editor**. Name it exactly `ai`, paste all of `supabase/functions/ai/index.ts`, and click **Deploy**. (With the Supabase CLI: `supabase functions deploy ai`.)
+3. Open **Edge Functions → Deploy a new function → Via editor**. Name it `ai`, delete the sample code in the editor, paste all of `supabase/functions/ai/index.ts`, and click **Deploy**. If you use a different name, put it in `aiFunction` in `config.js`. (With the Supabase CLI: `supabase functions deploy ai`.)
 4. Escalations run every 30 minutes through `pg_cron`, which `schema.sql` enables. If your project doesn't allow it, escalations still run whenever staff open the queue.
 
 If the function isn't deployed, the site still works: the chat option tells customers to use the form, and complaints stay on rule-based routing.
