@@ -1,5 +1,5 @@
 "use strict";
-/* LakkaBank Grievance Desk — public site.
+/* Sangam Bank Grievance Desk — public site.
    Talks to Supabase through the checked functions in supabase/schema.sql.
    With no config it runs in demo mode: everything stays in this tab. */
 
@@ -13,13 +13,17 @@ const SERVICES = [
   {id:"dep", name:"Fixed & recurring deposits", sub:"Maturity, interest", issues:["Maturity amount not credited","Wrong interest paid","Premature closure problem","TDS deducted wrongly"]},
   {id:"chq", name:"Cheques & drafts", sub:"Clearing, returns", issues:["Cheque not cleared","Cheque returned wrongly","Cheque book not received","Demand draft not issued"]},
   {id:"branch", name:"Branch service", sub:"Staff, queues, documents", issues:["Staff behaviour","Service refused or long wait","Documents not accepted","Senior citizen or disability access"]},
-  {id:"third", name:"Insurance & investments", sub:"Sold through LakkaBank", issues:["Product mis-sold","Policy not issued","Product added without consent","Redemption delayed"]},
+  {id:"third", name:"Insurance & investments", sub:"Sold through Sangam Bank", issues:["Product mis-sold","Policy not issued","Product added without consent","Redemption delayed"]},
   {id:"locker", name:"Safe deposit lockers", sub:"Allotment, rent, access", issues:["Allotment delayed","Rent dispute","Cannot access locker"]},
   {id:"kyc", name:"KYC, nomination & records", sub:"Updates and changes", issues:["KYC update pending","Nomination not registered","Name, address or mobile change pending"]},
 ];
 const SVC = Object.fromEntries(SERVICES.map(s=>[s.id,s]));
 const STATUS = {received:"Received", review:"Under review", info:"Waiting for you", resolved:"Resolved"};
 const SLA = 30, DAY = 864e5, IDLE_MS = 15*60*1000;
+const TEAMS = {cards:"Cards & ATMs", payments:"Payments & UPI", digital:"Digital banking", loans:"Loans & recovery", accounts:"Accounts & deposits", branch:"Branch operations", wealth:"Insurance & investments", records:"KYC & records", fraud:"Fraud cell"};
+const LEVELS = ["Complaints officer", "Team lead", "Principal Nodal Officer", "Internal Ombudsman / GM"];
+const ROUTED_BY = {rules:"Rules", ai:"AI", staff:"Staff"};
+const WHO = {bank:"Sangam Bank", customer:"Customer", system:"Routing & escalation"};
 
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -91,7 +95,7 @@ function updateGuard(el){
   const asksOnly = kinds.length === 1 && kinds[0].startsWith("a request");
   box.innerHTML = staff
     ? `<span><b>This message contains ${esc(listKinds(kinds))}.</b> Staff must never ask for or repeat OTPs, PINs, CVVs, passwords or full card, account or Aadhaar numbers.${asksOnly ? " Rephrase the message." : ""}</span>${asksOnly ? "" : `<button type="button" data-scrub>Remove them for me</button>`}`
-    : `<span><b>This looks like ${esc(listKinds(kinds))}.</b> LakkaBank never needs it here, and the complaint can't be sent with it.</span><button type="button" data-scrub>Remove it for me</button>`;
+    : `<span><b>This looks like ${esc(listKinds(kinds))}.</b> Sangam Bank never needs it here, and the complaint can't be sent with it.</span><button type="button" data-scrub>Remove it for me</button>`;
   return true;
 }
 let guardTimer;
@@ -130,26 +134,50 @@ const API = LIVE ? {
   get:    id => rpc("staff_get", {p_id: id}),
   reveal: id => rpc("reveal_contact", {p_id: id}),
   update: (id, status, note) => rpc("staff_update", {p_id: id, p_status: status, p_note: note}),
+  route:  (id, team) => rpc("staff_route", {p_id: id, p_team: team}),
+  aiChat: messages => ai({action: "chat", messages}),
+  aiRoute: ref => ai({action: "route", ref}),
 } : DemoAPI();
+
+// The "ai" Edge Function (supabase/functions/ai). Errors come back as {code:"ai", message}.
+async function ai(body){
+  const {data, error} = await sb.functions.invoke("ai", {body});
+  if (!error) return data;
+  let detail = null; try { detail = await error.context.json(); } catch(e){}
+  throw {code: "ai", message: detail?.error || "unavailable", kinds: detail?.kinds};
+}
 
 function DemoAPI(){
   const rows = []; let signed = false;
   const now = () => new Date().toISOString();
   const ref = () => { const d = new Date(), p = n=>String(n).padStart(2,"0"), A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     return `GD-${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}-` + Array.from(crypto.getRandomValues(new Uint8Array(8)), b => A[b%31]).join(""); };
-  const view = r => ({ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, status:r.status, amount:r.amount, description:r.description, history:r.history});
+  const view = r => ({ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, status:r.status, amount:r.amount, description:r.description, history:r.history.filter(h => h.by !== "system")});
   const find = (rf, m) => rows.find(r => r.ref === String(rf).trim().toUpperCase() && r.mobile === normMobile(m));
   const clean = (t, field, staff) => { const k = scan(t, staff); if (k.length) throw {code:"22023", message:`sensitive:${field}:${k.join(", ")}`}; };
   const get = async id => { const r = rows.find(x => x.id === id);
-    return {...view(r), id:r.id, acct:r.acct, txnDate:r.txnDate, txnRef:r.txnRef, outcome:r.outcome, name:r.name, mobile:maskPhone(r.mobile), email:maskEmail(r.email), contactViews:r.views}; };
+    return {...view(r), id:r.id, acct:r.acct, txnDate:r.txnDate, txnRef:r.txnRef, outcome:r.outcome, name:r.name, mobile:maskPhone(r.mobile), email:maskEmail(r.email), contactViews:r.views,
+      team:r.team, level:r.level, routedBy:r.routedBy, routeReason:r.routeReason, aiRisk:null, history:r.history}; };
+  // Same rules as private.default_team and private.escalation_target in schema.sql.
+  const defaultTeam = (svc, urgent) => urgent ? "fraud" : ({acct:"accounts", debit:"cards", credit:"cards", pay:"payments", digital:"digital", loan:"loans", dep:"accounts", chq:"accounts", branch:"branch", third:"wealth", locker:"branch", kyc:"records"})[svc] || "branch";
+  const escalate = r => {
+    if (r.status === "resolved") return;
+    const age = Math.floor((Date.now() - Date.parse(r.createdAt)) / DAY);
+    const lastAt = Math.max(...r.history.filter(h => h.by !== "system").map(h => Date.parse(h.at)));
+    const repeats = rows.filter(o => o !== r && o.mobile === r.mobile && Date.parse(o.createdAt) <= Date.parse(r.createdAt) && Date.parse(o.createdAt) > Date.parse(r.createdAt) - 90*DAY).length;
+    const [lvl, why] = age >= 25 ? [3, `Day ${age} of 30 without a final reply`] : age >= 20 ? [2, `Day ${age} of 30 without a final reply`]
+      : r.urgent && Number(r.amount) >= 100000 ? [2, "Suspected fraud of ₹1 lakh or more"] : repeats >= 2 ? [2, "Third complaint from this customer in 90 days"]
+      : r.urgent ? [1, "Fraud complaint"] : lastAt < Date.now() - 7*DAY ? [1, "No action for 7 days"] : [0, ""];
+    if (lvl > r.level){ r.level = lvl; r.history.push({at:now(), by:"system", status:null, note:`Escalated to ${LEVELS[lvl]}: ${why}.`}); }
+  };
   return {
     async lodge(c){
       ["description","outcome","txnRef","name"].forEach(f => clean(c[f], f));
-      const t = now();
-      const r = {...c, id:crypto.randomUUID(), ref:ref(), mobile:normMobile(c.mobile), views:0,
-        urgent:/^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)/i.test(c.issue),
-        createdAt:t, updatedAt:t, status:"received", history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}]};
-      rows.push(r); return view(r);
+      const t = now(), urgent = /^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)/i.test(c.issue), team = defaultTeam(c.service, urgent);
+      const r = {...c, id:crypto.randomUUID(), ref:ref(), mobile:normMobile(c.mobile), views:0, urgent,
+        team, level:0, routedBy:"rules", routeReason:"Default team for this service",
+        createdAt:t, updatedAt:t, status:"received", history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules.`}]};
+      rows.push(r); escalate(r); return view(r);
     },
     async track(rf, m){ const r = find(rf, m); return r ? view(r) : null; },
     async reply(rf, m, note){
@@ -161,8 +189,15 @@ function DemoAPI(){
     async signIn(){ signed = true; }, async signOut(){ signed = false; },
     async session(){ return signed ? {user:{email:"demo staff"}} : null; },
     async isStaff(){ return signed; },
-    async list(){ return rows.map(r => ({id:r.id, ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, amount:r.amount, status:r.status, name:r.name, mobile:maskPhone(r.mobile)})); },
+    async list(){ rows.forEach(escalate); return rows.map(r => ({id:r.id, ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, amount:r.amount, status:r.status, team:r.team, level:r.level, routedBy:r.routedBy, name:r.name, mobile:maskPhone(r.mobile)})); },
     get,
+    async route(id, team){
+      const r = rows.find(x => x.id === id);
+      if (r.team !== team){ r.team = team; r.routedBy = "staff"; r.routeReason = "Re-routed by staff"; r.history.push({at:now(), by:"system", status:null, note:`Re-routed to ${TEAMS[team]} by staff.`}); }
+      return get(id);
+    },
+    async aiChat(){ throw {code:"ai", message:"demo"}; },
+    async aiRoute(){ return {skipped:true}; },
     async reveal(id){ const r = rows.find(x => x.id === id); r.views++; return {mobile:r.mobile, email:r.email}; },
     async update(id, status, note){
       clean(note, "note", true); const r = rows.find(x => x.id === id), t = now();
@@ -178,7 +213,7 @@ function errText(e){
   if (m === "locked") return "Too many tries with the wrong mobile number. For your security, tracking for this reference is paused for an hour.";
   if (m === "consent_required") return "Tick the confirmation box to submit.";
   if (m === "invalid:mobile") return "Enter a valid 10-digit mobile number.";
-  if (m === "not_waiting") return "LakkaBank isn't waiting for a reply on this complaint any more. Search again to see its latest status.";
+  if (m === "not_waiting") return "Sangam Bank isn't waiting for a reply on this complaint any more. Search again to see its latest status.";
   if (m === "not_staff" || e?.code === "42501") return "This account isn't on the staff list. Ask your administrator to add you.";
   if (/invalid login credentials/i.test(m)) return "The email or password is wrong.";
   if (e?.code === "23514" || e?.code === "22P02" || e?.code === "22007") return "Some details weren't accepted. Check the form and try again.";
@@ -240,8 +275,10 @@ $("#form").addEventListener("submit", async e => {
   const btn = $("#submitBtn"); btn.disabled = true; btn.textContent = "Submitting…";
   try {
     const c = await API.lodge(payload);
+    API.aiRoute(c.ref).catch(() => {});   // AI re-routing in the background; rule-based routing already applies
     rememberRef(c.ref);
     showReceipt(c, mobile);
+    resetChat(); $("#draftNote").hidden = true;
     $("#form").reset(); $("#acctHint").textContent = "Only the last 4 digits"; $("#acctHint").className = "hint";
     $("#f-issue").innerHTML = `<option value="">Choose a service first</option>`; $("#fraudNote").hidden = true;
   } catch(ex) { err.textContent = errText(ex); }
@@ -263,6 +300,70 @@ function showReceipt(c, mobile){
   r.scrollIntoView({block:"start"});
 }
 function resetLodge(){ $("#receipt").hidden = true; $("#lodgeWrap").hidden = false; }
+
+/* ---------- AI complaint assistant ----------
+   The conversation goes to the "ai" Edge Function, which returns a draft for the form.
+   Contact details never go through the chat: the customer types them into the form. */
+const GREETING = "Hello! Tell me what went wrong, in your own words. For example, which service it's about, what happened and when. I'll ask a few questions and fill in the complaint form for you.";
+const chat = { msgs: [], draft: null, busy: false };
+$("#assistCta").hidden = !LIVE;   // needs the Edge Function, so not in demo mode
+$("#openChat").onclick = () => openChat();
+$("#chatToForm").onclick = () => closeChat();
+function openChat(){
+  $("#assistCta").hidden = true; $("#form").hidden = true; $("#draftNote").hidden = true; $("#chatPanel").hidden = false;
+  if (!chat.msgs.length) renderChat();
+  $("#chatText").focus();
+}
+function closeChat(){ $("#chatPanel").hidden = true; $("#form").hidden = false; $("#assistCta").hidden = !LIVE; }
+function resetChat(){ chat.msgs = []; chat.draft = null; $("#chatLog").innerHTML = ""; closeChat(); }
+function renderChat(){
+  const log = $("#chatLog");
+  log.innerHTML = `<div class="msg bot">${esc(GREETING)}</div>` +
+    chat.msgs.map(m => `<div class="msg ${m.role === "user" ? "me" : "bot"}">${esc(m.content)}</div>`).join("") +
+    (chat.busy ? `<div class="msg bot typing">Thinking…</div>` : "") +
+    (chat.draft && !chat.busy ? draftCard(chat.draft) : "");
+  const use = $("#useDraft"); if (use) use.onclick = () => applyDraft(chat.draft);
+  log.scrollTop = log.scrollHeight;
+}
+function draftCard(d){
+  const kv = [["Service", SVC[d.service]?.name], ["Issue", d.issue.replace(/^!/,"")], ["What happened", d.description],
+    ["Transaction date", d.txnDate ? fmtDate(d.txnDate) : ""], ["Amount", d.amount ? inr(d.amount) : ""], ["Transaction ref.", d.txnRef],
+    ["Account or card", d.acctLast4 ? "•••• " + d.acctLast4 : ""], ["What would put it right", d.outcome]].filter(([, v]) => v);
+  return `<div class="draft"><p class="label" style="margin:0">Your complaint so far</p>
+    <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <div class="actions"><button class="btn" type="button" id="useDraft">Use these details</button><span class="muted" style="font-size:12.5px">You can still change anything on the form.</span></div></div>`;
+}
+$("#chatForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const ta = $("#chatText"), err = $("#chatErr"), text = ta.value.trim(); err.textContent = "";
+  if (!text || chat.busy) return;
+  if (updateGuard(ta)){ err.textContent = "Remove the confidential details flagged in red. They weren't sent."; ta.focus(); return; }
+  chat.msgs.push({role: "user", content: text}); ta.value = ""; chat.busy = true; $("#chatSend").disabled = true; renderChat();
+  try {
+    const r = await API.aiChat(chat.msgs);
+    chat.msgs.push({role: "assistant", content: r.reply});
+    chat.draft = r.ready ? r.draft : null;
+  } catch(ex){
+    chat.msgs.pop(); ta.value = text;   // nothing was saved; let them edit and resend
+    err.textContent = ex?.message === "sensitive" ? `That message contains ${listKinds(ex.kinds || ["confidential details"])}. Remove it and send again.`
+      : ex?.message === "rate_limited" ? "Too many messages for now. Please use the form below, or try again in an hour."
+      : "The assistant isn't available right now. Please fill in the form instead.";
+    if (ex?.message !== "sensitive") $("#chatToForm").focus();
+  } finally { chat.busy = false; $("#chatSend").disabled = false; renderChat(); }
+  if (chat.msgs.length >= 22 && !chat.draft) err.textContent = "This chat is getting long. Fill in the form for the rest.";
+});
+$("#chatText").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("#chatForm").requestSubmit(); } });
+
+function applyDraft(d){
+  const radio = $(`#svc-${d.service}`); if (!radio) return;
+  radio.checked = true; radio.dispatchEvent(new Event("change", {bubbles: true}));
+  $("#f-issue").value = d.issue; $("#fraudNote").hidden = !d.issue.startsWith("!");
+  $("#f-acct").value = d.acctLast4 || ""; $("#f-date").value = d.txnDate || ""; $("#f-amt").value = d.amount || "";
+  $("#f-txn").value = d.txnRef || ""; $("#f-desc").value = d.description || ""; $("#f-want").value = d.outcome || "";
+  closeChat(); $("#assistCta").hidden = true; $("#draftNote").hidden = false;
+  $("#form").querySelectorAll("[data-scan]").forEach(updateGuard);
+  $("#f-name").scrollIntoView({block: "center"}); $("#f-name").focus({preventScroll: true});
+}
 
 /* refs only (never mobile numbers) are remembered on this device for convenience */
 function deviceRefs(){ try { return JSON.parse(localStorage.getItem("gd-refs") || "[]"); } catch(e){ return []; } }
@@ -303,8 +404,8 @@ function renderTracked(){
       <div style="display:flex;gap:10px;align-items:center">${clock(c)} ${pill(st)}</div>
     </div>
     <div class="track">${steps.map(([t,done,wait])=>`<div class="${wait?"wait":done?"done":""}">${t}</div>`).join("")}</div>
-    <ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"LakkaBank":"You"}</span>${h.status&&h.by==="bank"?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul>
-    ${st==="info" ? `<div class="field"><label for="reply">Your reply</label><textarea id="reply" maxlength="2000" data-scan placeholder="Answer LakkaBank's question here"></textarea><div class="actions"><button class="btn" id="replyBtn" type="button">Send reply</button><span class="err" id="replyErr" role="alert"></span></div></div>` : ""}
+    <ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"Sangam Bank":"You"}</span>${h.status&&h.by==="bank"?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul>
+    ${st==="info" ? `<div class="field"><label for="reply">Your reply</label><textarea id="reply" maxlength="2000" data-scan placeholder="Answer Sangam Bank's question here"></textarea><div class="actions"><button class="btn" id="replyBtn" type="button">Send reply</button><span class="err" id="replyErr" role="alert"></span></div></div>` : ""}
     ${(isLate(c) || st==="resolved") ? `<div class="alert info"><strong>Not satisfied?</strong>${isLate(c)?"We haven't replied within 30 days.":"If you disagree with our reply,"} You can complain to the RBI Ombudsman online at <span class="mono">cms.rbi.org.in</span> or call 14448. Quote ${esc(c.ref)}.</div>` : ""}
   </article></div>`;
   const rb = $("#replyBtn");
@@ -372,7 +473,10 @@ async function loadQueue(){
 
 $("#fStatus").innerHTML = `<option value="">All statuses</option><option value="open">All open</option>` + Object.entries(STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
 $("#fSvc").innerHTML = `<option value="">All services</option>` + SERVICES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
-["#q","#fStatus","#fSvc"].forEach(s => $(s).addEventListener("input", renderQueue));
+$("#fTeam").innerHTML = `<option value="">All teams</option>` + Object.entries(TEAMS).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("");
+["#q","#fStatus","#fSvc","#fTeam"].forEach(s => $(s).addEventListener("input", renderQueue));
+const lvlBadge = l => l > 0 ? `<span class="lvl l${l}">↑ ${esc(LEVELS[l])}</span>` : "";
+const teamLine = c => `<span class="team">${esc(TEAMS[c.team] || "Unrouted")}${c.routedBy ? `<span class="by">${esc(ROUTED_BY[c.routedBy] || c.routedBy)}</span>` : ""}</span>`;
 
 function renderQueue(){
   const rows = S.rows, open = rows.filter(c => c.status!=="resolved"), month = new Date().toISOString().slice(0,7);
@@ -380,24 +484,26 @@ function renderQueue(){
   $("#tiles").innerHTML = [
     ["Open", open.length, false],
     ["Urgent and open", open.filter(c=>c.urgent).length, open.some(c=>c.urgent)],
+    ["Escalated", open.filter(c=>c.level>0).length, open.some(c=>c.level>=2)],
     ["Past 30 days", open.filter(isLate).length, open.some(isLate)],
     ["Resolved this month", rows.filter(c=>c.status==="resolved"&&c.updatedAt.startsWith(month)).length, false],
   ].map(([l,n,a])=>`<div class="tile ${a?"alarm":""}"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("");
 
-  const q = $("#q").value.trim().toLowerCase(), fs = $("#fStatus").value, fv = $("#fSvc").value;
+  const q = $("#q").value.trim().toLowerCase(), fs = $("#fStatus").value, fv = $("#fSvc").value, ft = $("#fTeam").value;
   const shown = rows.filter(c =>
-    (!fs || (fs==="open" ? c.status!=="resolved" : c.status===fs)) && (!fv || c.service===fv) &&
+    (!fs || (fs==="open" ? c.status!=="resolved" : c.status===fs)) && (!fv || c.service===fv) && (!ft || c.team===ft) &&
     (!q || `${c.ref} ${c.name}`.toLowerCase().includes(q))
-  ).sort((a,b) => (b.urgent - a.urgent) || ((a.status==="resolved") - (b.status==="resolved")) || a.createdAt.localeCompare(b.createdAt));
+  ).sort((a,b) => ((a.status==="resolved") - (b.status==="resolved")) || (b.urgent - a.urgent) || ((b.level||0) - (a.level||0)) || a.createdAt.localeCompare(b.createdAt));
 
   const body = $("#queueBody");
   if (!rows.length){ body.innerHTML = `<div class="empty"><h3>The queue is empty</h3><p>New complaints appear here when customers submit them, most urgent and oldest first.</p></div>`; return; }
   if (!shown.length){ body.innerHTML = `<div class="empty"><h3>No complaints match</h3><p>Clear the search or filters to see the full queue.</p></div>`; return; }
-  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th style="text-align:right">Amount</th><th>30-day clock</th><th>Status</th></tr></thead><tbody>` +
+  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th>Team and level</th><th style="text-align:right">Amount</th><th>30-day clock</th><th>Status</th></tr></thead><tbody>` +
     shown.map(c => `<tr data-id="${esc(c.id)}" tabindex="0">
       <td><span class="ref">${esc(c.ref)}</span><br><span class="muted" style="font-size:12px">${esc(fmtDate(c.createdAt))}</span></td>
       <td>${esc(c.name)}<br><span class="muted mono" style="font-size:12px">${esc(c.mobile)}</span></td>
       <td>${c.urgent?'<span class="urgent">Urgent · </span>':""}${esc(SVC[c.service]?.name)}<br><span class="muted">${esc(c.issue)}</span></td>
+      <td>${teamLine(c)}${c.level > 0 ? "<br>" + lvlBadge(c.level) : ""}</td>
       <td class="num">${inr(c.amount)}</td>
       <td>${clock(c)}${meter(c)}</td>
       <td>${pill(c.status)}</td></tr>`).join("") + `</tbody></table></div>`;
@@ -425,7 +531,20 @@ function renderDetail(){
       <div><dl class="kv">${kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
       <p style="margin:10px 0 0;font-size:13px" class="muted">${contact ? "Contact details shown. This view has been recorded." : `Contact details are masked. <button class="reveal" id="d-reveal" type="button">Show contact details</button> only when you're about to contact the customer. Each view is recorded.`} Viewed ${Number(c.contactViews)+(contact?1:0)} time${Number(c.contactViews)+(contact?1:0)===1?"":"s"} so far.</p></div>
       <div><p class="label">Customer's account of the problem</p><p style="white-space:pre-wrap;margin:6px 0 0">${esc(c.description)}</p></div>
-      <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li><time>${esc(fmtDT(h.at))}</time><div><span class="who">${h.by==="bank"?"LakkaBank":"Customer"}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
+      <div class="route-box">
+        <p class="label">Routing and escalation</p>
+        <dl class="kv">
+          <dt>Team</dt><dd>${teamLine(c)}</dd>
+          ${c.routeReason ? `<dt>Why</dt><dd>${esc(c.routeReason)}</dd>` : ""}
+          ${c.aiRisk ? `<dt>AI risk</dt><dd>${esc(c.aiRisk[0].toUpperCase() + c.aiRisk.slice(1))}</dd>` : ""}
+          <dt>Escalation level</dt><dd>${esc(LEVELS[c.level || 0])} ${lvlBadge(c.level || 0)}</dd>
+        </dl>
+        <div class="row">
+          <div class="field"><label for="d-team">Re-route to</label><select id="d-team">${Object.entries(TEAMS).map(([k,v])=>`<option value="${k}" ${k===c.team?"selected":""}>${esc(v)}</option>`).join("")}</select></div>
+          <div class="actions"><button class="btn ghost" id="d-route" type="button">Re-route</button><span class="err" id="d-rerr" role="alert"></span></div>
+        </div>
+      </div>
+      <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li class="${h.by==="system"?"sys":""}"><time>${esc(fmtDT(h.at))}</time><div><span class="who">${esc(WHO[h.by] || h.by)}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
       <div style="display:grid;gap:12px;border-top:1px solid var(--line);padding-top:18px">
         <p class="label">Send an update to the customer</p>
         <div class="field"><label for="d-status">Set status to</label><select id="d-status">${Object.entries(STATUS).filter(([k])=>k!=="received").map(([k,v])=>`<option value="${k}" ${k===c.status?"selected":""}>${v}</option>`).join("")}</select></div>
@@ -439,6 +558,13 @@ function renderDetail(){
     const keep = $("#d-note").value;
     try { contact = await API.reveal(c.id); renderDetail(); $("#d-note").value = keep; }
     catch(ex){ $("#d-err").textContent = errText(ex); }
+  };
+  $("#d-route").onclick = async () => {
+    const team = $("#d-team").value, keep = $("#d-note").value;
+    if (team === c.team) { $("#d-rerr").textContent = "It's already with that team."; return; }
+    $("#d-route").disabled = true;
+    try { detail = await API.route(c.id, team); renderDetail(); $("#d-note").value = keep; loadQueue(); }
+    catch(ex){ $("#d-rerr").textContent = errText(ex); $("#d-route").disabled = false; }
   };
   $("#d-send").onclick = async () => {
     const note = $("#d-note").value.trim(), status = $("#d-status").value, de = $("#d-err"); de.textContent = "";
