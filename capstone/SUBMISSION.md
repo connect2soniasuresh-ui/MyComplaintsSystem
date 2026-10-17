@@ -11,8 +11,8 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 
 ## Before submitting
 
-- [ ] Merge the `capstone/submission` branch into `main` and push, so the live site has the monthly report and `?demo` mode.
-- [ ] Open the live site with `?demo` and walk through: lodge (type `OTP 123456` to see it blocked), track, Staff tab (any email), Monthly report.
+- [x] Merge the `capstone/submission` branch into `main` and push, so the live site has the monthly report and `?demo` mode.
+- [x] Open the live site with `?demo` and walk through: lodge (type `OTP 123456` to see it blocked), track, Staff tab (any email), Monthly report.
 - [ ] Run the nodal-officer interviews (guide in the segment analysis, section 11). Then replace the illustrative persona quotes and re-render the PDFs.
 - [ ] Export the deck to PowerPoint or PDF, or share the link, depending on the LMS template.
 
