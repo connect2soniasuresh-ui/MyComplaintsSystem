@@ -14,7 +14,10 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 - [x] Merge the `capstone/submission` branch into `main` and push, so the live site has the monthly report and `?demo` mode.
 - [x] Open the live site with `?demo` and walk through: lodge (type `OTP 123456` to see it blocked), track, Staff tab (any email), Monthly report.
 - [ ] Run the nodal-officer interviews (guide in the segment analysis, section 11). Then replace the illustrative persona quotes and re-render the PDFs.
-- [ ] Export the deck to PowerPoint or PDF, or share the link, depending on the LMS template.
+- [x] Export the deck to PowerPoint and PDF (no specific LMS format required).
+- [x] Re-run `supabase/schema.sql` on the live database (24-hour escalations).
+- [ ] Redeploy the `ai` Edge Function so the chat assistant mentions the 24-hour target.
+- [x] Repository is public.
 
 ## Re-rendering the PDFs after edits
 
