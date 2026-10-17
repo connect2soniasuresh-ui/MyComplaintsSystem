@@ -16,7 +16,7 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 - [ ] Run the nodal-officer interviews (guide in the segment analysis, section 11). Then replace the illustrative persona quotes and re-render the PDFs.
 - [x] Export the deck to PowerPoint and PDF (no specific LMS format required).
 - [x] Re-run `supabase/schema.sql` on the live database (24-hour escalations).
-- [ ] Redeploy the `ai` Edge Function so the chat assistant mentions the 24-hour target.
+- [ ] Redeploy the Edge Function (deployed as `dynamic-service`) from `supabase/functions/ai/index.ts` so the chat assistant mentions the 24-hour target.
 - [x] Repository is public.
 
 ## Re-rendering the PDFs after edits
