@@ -210,23 +210,30 @@ language sql immutable as $$
     else 'branch' end end
 $$;
 
+-- "5 hours" up to 47 hours, then "3 days". Matches dur() in app.js.
+create or replace function private.duration(h int) returns text
+language sql immutable as $$
+  select case when h < 48 then h || ' hour' || case when h = 1 then '' else 's' end else (h / 24) || ' days' end
+$$;
+
 -- The escalation matrix. Returns the level a complaint should be at now, and why.
 create or replace function private.escalation_target(c public.complaints, out lvl int, out reason text)
 language plpgsql stable as $$
-declare age int := floor(extract(epoch from now() - c.created_at) / 86400);
+declare hrs int := floor(extract(epoch from now() - c.created_at) / 3600);
         last_at timestamptz := (select max(at) from public.complaint_events e where e.complaint_id = c.id and e.by_role <> 'system');
         repeats int := (select count(*) from public.complaints o where o.mobile = c.mobile and o.id <> c.id
                           and o.created_at > c.created_at - interval '90 days' and o.created_at <= c.created_at);
 begin
   lvl := 0; reason := null;
   if c.status = 'resolved' then return; end if;
-  if    age >= 25 then lvl := 3; reason := 'Day ' || age || ' of 30 without a final reply';
-  elsif age >= 20 then lvl := 2; reason := 'Day ' || age || ' of 30 without a final reply';
+  -- Time rules follow the bank's 24-hour resolution target (RBI's 30-day limit is the outer deadline).
+  if    hrs >= 20 then lvl := 3; reason := 'Open ' || private.duration(hrs) || ' against the 24-hour target';
+  elsif hrs >= 12 then lvl := 2; reason := 'Open ' || private.duration(hrs) || ' against the 24-hour target';
   elsif c.urgent and coalesce(c.amount, 0) >= 100000 then lvl := 2; reason := 'Suspected fraud of ₹1 lakh or more';
   elsif repeats >= 2 then lvl := 2; reason := 'Third complaint from this customer in 90 days';
   elsif c.ai_risk = 'high' then lvl := 1; reason := 'AI rated this complaint high risk';
   elsif c.urgent then lvl := 1; reason := 'Fraud complaint';
-  elsif last_at < now() - interval '7 days' then lvl := 1; reason := 'No action for 7 days';
+  elsif last_at < now() - interval '4 hours' then lvl := 1; reason := 'No action for 4 hours';
   end if;
 end $$;
 
@@ -490,12 +497,12 @@ update public.complaints set team = private.default_team(service, urgent), route
  where team is null;
 
 -- ---------------------------------------------------------------- scheduled escalations
--- Runs the escalation matrix every 30 minutes. If pg_cron isn't available, escalations
+-- Runs the escalation matrix every 10 minutes. If pg_cron isn't available, escalations
 -- still run each time staff load the queue.
 do $$
 begin
   create extension if not exists pg_cron;
-  perform cron.schedule('gd-escalations', '*/30 * * * *', 'select private.run_escalations()');
+  perform cron.schedule('gd-escalations', '*/10 * * * *', 'select private.run_escalations()');
 exception when others then
   raise notice 'pg_cron not available (%). Escalations will run when staff open the queue.', sqlerrm;
 end $$;

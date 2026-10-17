@@ -19,7 +19,8 @@ const SERVICES = [
 ];
 const SVC = Object.fromEntries(SERVICES.map(s=>[s.id,s]));
 const STATUS = {received:"Received", review:"Under review", info:"Waiting for you", resolved:"Resolved"};
-const SLA = 30, DAY = 864e5, IDLE_MS = 15*60*1000;
+// SLA: RBI's 30-day final-reply deadline. TARGET_H: the bank's own 24-hour resolution target, well inside it.
+const SLA = 30, TARGET_H = 24, DAY = 864e5, HOUR = 36e5, IDLE_MS = 15*60*1000;
 const TEAMS = {cards:"Cards & ATMs", payments:"Payments & UPI", digital:"Digital banking", loans:"Loans & recovery", accounts:"Accounts & deposits", branch:"Branch operations", wealth:"Insurance & investments", records:"KYC & records", fraud:"Fraud cell"};
 const LEVELS = ["Complaints officer", "Team lead", "Principal Nodal Officer", "Internal Ombudsman / GM"];
 const ROUTED_BY = {rules:"Rules", ai:"AI", staff:"Staff"};
@@ -32,15 +33,19 @@ const fmtDT = iso => new Date(iso).toLocaleString("en-IN",{day:"numeric",month:"
 const inr = n => n==null||n==="" ? "—" : "₹" + Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
 const daysOpen = c => Math.floor(((c.status==="resolved" ? new Date(c.updatedAt) : new Date()) - new Date(c.createdAt))/DAY);
 const isLate = c => c.status!=="resolved" && daysOpen(c) > SLA;
+const hoursOpen = c => Math.floor(((c.status==="resolved" ? new Date(c.updatedAt) : new Date()) - new Date(c.createdAt))/HOUR);
+const isOverdue = c => c.status!=="resolved" && hoursOpen(c) >= TARGET_H;
+const dur = h => h < 48 ? `${h} hour${h===1?"":"s"}` : `${Math.floor(h/24)} days`;
 const pill = s => `<span class="pill s-${esc(s)}">${esc(STATUS[s])}</span>`;
 function clock(c){
-  const d = daysOpen(c);
-  if (c.status==="resolved") return `<span class="clock">Closed in ${d} day${d===1?"":"s"}</span>`;
-  return isLate(c) ? `<span class="clock late">${d-SLA} day${d-SLA===1?"":"s"} past 30</span>` : `<span class="clock">Day ${d} of 30</span>`;
+  const d = daysOpen(c), h = hoursOpen(c);
+  if (c.status==="resolved") return `<span class="clock">Closed in ${dur(h)}</span>`;
+  if (isLate(c)) return `<span class="clock late">${d-SLA} day${d-SLA===1?"":"s"} past 30</span>`;
+  return isOverdue(c) ? `<span class="clock late">Past 24h · Day ${d} of 30</span>` : `<span class="clock">${h}h of 24h</span>`;
 }
 function meter(c){
-  const pct = c.status==="resolved" ? 100 : Math.min(100, daysOpen(c)/SLA*100);
-  return `<div class="meter ${isLate(c)?"late":""}"><i style="width:${pct}%"></i></div>`;
+  const pct = c.status==="resolved" ? 100 : Math.min(100, hoursOpen(c)/TARGET_H*100);
+  return `<div class="meter ${isOverdue(c)?"late":""}"><i style="width:${pct}%"></i></div>`;
 }
 function normMobile(m){
   const d = String(m||"").replace(/[\s-]/g,"").replace(/^(?:\+?91|0)(?=[6-9]\d{9}$)/,"");
@@ -116,7 +121,9 @@ function blockedField(root){
 
 /* ---------- data layer ---------- */
 const CFG = window.GD_CONFIG || {};
-const LIVE = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
+// ?demo forces demo mode on the live site, so reviewers can walk through every screen without touching real data.
+const FORCED_DEMO = new URLSearchParams(location.search).has("demo");
+const LIVE = !FORCED_DEMO && !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
 const sb = LIVE ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
   auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
 }) : null;
@@ -150,7 +157,7 @@ async function ai(body){
 function DemoAPI(){
   const rows = []; let signed = false;
   const now = () => new Date().toISOString();
-  const ref = () => { const d = new Date(), p = n=>String(n).padStart(2,"0"), A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const ref = (d = new Date()) => { const p = n=>String(n).padStart(2,"0"), A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     return `GD-${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}-` + Array.from(crypto.getRandomValues(new Uint8Array(8)), b => A[b%31]).join(""); };
   const view = r => ({ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, status:r.status, amount:r.amount, description:r.description, history:r.history.filter(h => h.by !== "system")});
   const find = (rf, m) => rows.find(r => r.ref === String(rf).trim().toUpperCase() && r.mobile === normMobile(m));
@@ -162,14 +169,36 @@ function DemoAPI(){
   const defaultTeam = (svc, urgent) => urgent ? "fraud" : ({acct:"accounts", debit:"cards", credit:"cards", pay:"payments", digital:"digital", loan:"loans", dep:"accounts", chq:"accounts", branch:"branch", third:"wealth", locker:"branch", kyc:"records"})[svc] || "branch";
   const escalate = r => {
     if (r.status === "resolved") return;
-    const age = Math.floor((Date.now() - Date.parse(r.createdAt)) / DAY);
+    const hrs = Math.floor((Date.now() - Date.parse(r.createdAt)) / HOUR);
     const lastAt = Math.max(...r.history.filter(h => h.by !== "system").map(h => Date.parse(h.at)));
     const repeats = rows.filter(o => o !== r && o.mobile === r.mobile && Date.parse(o.createdAt) <= Date.parse(r.createdAt) && Date.parse(o.createdAt) > Date.parse(r.createdAt) - 90*DAY).length;
-    const [lvl, why] = age >= 25 ? [3, `Day ${age} of 30 without a final reply`] : age >= 20 ? [2, `Day ${age} of 30 without a final reply`]
+    const [lvl, why] = hrs >= 20 ? [3, `Open ${dur(hrs)} against the 24-hour target`] : hrs >= 12 ? [2, `Open ${dur(hrs)} against the 24-hour target`]
       : r.urgent && Number(r.amount) >= 100000 ? [2, "Suspected fraud of ₹1 lakh or more"] : repeats >= 2 ? [2, "Third complaint from this customer in 90 days"]
-      : r.urgent ? [1, "Fraud complaint"] : lastAt < Date.now() - 7*DAY ? [1, "No action for 7 days"] : [0, ""];
+      : r.urgent ? [1, "Fraud complaint"] : lastAt < Date.now() - 4*HOUR ? [1, "No action for 4 hours"] : [0, ""];
     if (lvl > r.level){ r.level = lvl; r.history.push({at:now(), by:"system", status:null, note:`Escalated to ${LEVELS[lvl]}: ${why}.`}); }
   };
+  // Sample cases (backdated) so the staff queue, escalations and monthly report have something to show.
+  [[0.25,"pay","Debited but not credited to beneficiary",2500,"received","Priya Nair","9000000001","Paid ₹2,500 by UPI to a grocery shop. Money left my account but the shop says it never arrived."],
+   [3,"debit","Unauthorised transaction on debit card",145000,"review","Ramesh Patil","9000000002","Three transactions I never made appeared on my debit card overnight. I have blocked the card."],
+   [9,"loan","EMI debited wrongly",18400,"review","Sunita Deshmukh","9000000003","My home loan EMI was debited twice this month."],
+   [22,"acct","Wrong charge or deduction",590,"review","Mohammed Shaikh","9000000004","A minimum balance charge was deducted although my balance never went below the limit."],
+   [27,"chq","Cheque not cleared",42000,"info","Anita Kulkarni","9000000005","A cheque I deposited at the Kothrud branch has not been credited after two weeks."],
+   [12,"locker","Rent dispute",3500,"resolved","Vijay Joshi","9000000006","Locker rent was charged twice for the same year."],
+   [40,"digital","Cannot log in",null,"resolved","Kavita Rao","9000000007","The mobile app says my account is locked every time I log in."],
+   [33,"credit","Billing dispute",7800,"review","Farah Khan","9000000009","My credit card bill shows a hotel booking of ₹7,800 that was cancelled and refunded by the hotel."],
+   [0.08,"kyc","Name, address or mobile change pending",null,"received","Arjun Mehta","9000000008","I submitted my new address at the branch a month ago but it still shows the old one."],
+  ].forEach(([age, service, issue, amount, status, name, mobile, description], i) => {
+    const at = d => new Date(Date.now() - d*DAY).toISOString(), t = at(age), urgent = /^unauthorised/i.test(issue), team = defaultTeam(service, urgent);
+    const r = {service, issue, amount, description, name, mobile, acct:"", txnDate:t.slice(0,10), txnRef:"", outcome:"", email:"", id:crypto.randomUUID(), ref:ref(new Date(t)), views:0, urgent,
+      team, level:0, routedBy:"rules", routeReason:"Default team for this service", createdAt:t, updatedAt:t, status,
+      history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules.`}]};
+    if (status !== "received"){ const u = at(Math.max(0, age - (status === "resolved" ? (service === "locker" ? 0.5 : Math.min(age, 6 + i)) : Math.min(age / 2, 2))));
+      r.history.push({at:u, by:"bank", status, note: status === "resolved" ? "We have refunded the amount to your account." : status === "info" ? "Please tell us the cheque number and date." : "We are looking into this with the team concerned."});
+      r.updatedAt = u; }
+    rows.push(r);
+  });
+  rows.forEach(escalate);
+
   return {
     async lodge(c){
       ["description","outcome","txnRef","name"].forEach(f => clean(c[f], f));
@@ -291,7 +320,7 @@ function showReceipt(c, mobile){
   r.innerHTML = `<div class="receipt">
     <p class="label">Complaint received · ${esc(fmtDT(c.createdAt))}</p>
     <div class="ref">${esc(c.ref)}</div>
-    <p style="margin:0">Write this reference number down. You'll need it and your mobile number to track the complaint. We'll reply by <strong>${esc(fmtDate(new Date(Date.parse(c.createdAt)+SLA*DAY).toISOString()))}</strong>.</p>
+    <p style="margin:0">Write this reference number down. You'll need it and your mobile number to track the complaint. We aim to resolve it within <strong>24 hours</strong>, and you'll have our final reply by <strong>${esc(fmtDate(new Date(Date.parse(c.createdAt)+SLA*DAY).toISOString()))}</strong> at the latest.</p>
     ${c.urgent ? `<div class="alert bad"><strong>Marked urgent</strong>Unauthorised-transaction complaints go to the fraud team first.</div>` : ""}
     <div class="actions"><button class="btn" id="goTrack" type="button">Track this complaint</button><button class="btn ghost" id="another" type="button">Lodge another</button></div>
   </div>`;
@@ -485,6 +514,7 @@ function renderQueue(){
     ["Open", open.length, false],
     ["Urgent and open", open.filter(c=>c.urgent).length, open.some(c=>c.urgent)],
     ["Escalated", open.filter(c=>c.level>0).length, open.some(c=>c.level>=2)],
+    ["Past 24-hour target", open.filter(isOverdue).length, open.some(isOverdue)],
     ["Past 30 days", open.filter(isLate).length, open.some(isLate)],
     ["Resolved this month", rows.filter(c=>c.status==="resolved"&&c.updatedAt.startsWith(month)).length, false],
   ].map(([l,n,a])=>`<div class="tile ${a?"alarm":""}"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("");
@@ -498,7 +528,7 @@ function renderQueue(){
   const body = $("#queueBody");
   if (!rows.length){ body.innerHTML = `<div class="empty"><h3>The queue is empty</h3><p>New complaints appear here when customers submit them, most urgent and oldest first.</p></div>`; return; }
   if (!shown.length){ body.innerHTML = `<div class="empty"><h3>No complaints match</h3><p>Clear the search or filters to see the full queue.</p></div>`; return; }
-  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th>Team and level</th><th style="text-align:right">Amount</th><th>30-day clock</th><th>Status</th></tr></thead><tbody>` +
+  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th>Team and level</th><th style="text-align:right">Amount</th><th>Clock (24h target)</th><th>Status</th></tr></thead><tbody>` +
     shown.map(c => `<tr data-id="${esc(c.id)}" tabindex="0">
       <td><span class="ref">${esc(c.ref)}</span><br><span class="muted" style="font-size:12px">${esc(fmtDate(c.createdAt))}</span></td>
       <td>${esc(c.name)}<br><span class="muted mono" style="font-size:12px">${esc(c.mobile)}</span></td>
@@ -576,10 +606,66 @@ function renderDetail(){
   };
 }
 
+/* ---------- monthly MIS report ----------
+   Built in the browser from the staff queue (contacts already masked), for the
+   nodal officer's board and RBI reporting. Nothing extra is fetched or stored. */
+const monthKey = iso => new Date(iso).toLocaleDateString("en-CA").slice(0,7);   // local YYYY-MM
+const monthName = k => new Date(k + "-01T00:00").toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+$("#reportBtn").onclick = () => openReport();
+function openReport(month){
+  const months = [...new Set([monthKey(new Date().toISOString()), ...S.rows.map(c => monthKey(c.createdAt))])].sort().reverse();
+  month = month || months[0];
+  const got = S.rows.filter(c => monthKey(c.createdAt) === month);
+  const closed = S.rows.filter(c => c.status === "resolved" && monthKey(c.updatedAt) === month);
+  const inTime = closed.filter(c => daysOpen(c) <= SLA).length, inTarget = closed.filter(c => hoursOpen(c) < TARGET_H).length;
+  const avgH = closed.length ? closed.reduce((s, c) => s + hoursOpen(c), 0) / closed.length : null;
+  const avg = avgH == null ? "—" : avgH < 48 ? avgH.toFixed(1) + " h" : (avgH / 24).toFixed(1) + " days";
+  const open = S.rows.filter(c => c.status !== "resolved");
+  const pct = (n, d) => d ? Math.round(n / d * 100) + "%" : "—";
+  const tiles = [["Received", got.length], ["Resolved", closed.length], ["Resolved within 24 hours", pct(inTarget, closed.length)], ["Resolved within 30 days", pct(inTime, closed.length)],
+    ["Average time to resolve", avg], ["Open now", open.length], ["Open past 24 hours", open.filter(isOverdue).length], ["Open past 30 days", open.filter(isLate).length]];
+  const breakdown = (title, keys, label, pick) => {
+    const lines = keys.map(k => {
+      const g = got.filter(c => pick(c) === k), r = closed.filter(c => pick(c) === k), o = open.filter(c => pick(c) === k);
+      return [label(k), g.length, r.length, o.length, o.filter(isOverdue).length, o.filter(isLate).length];
+    }).filter(l => l[1] + l[2] + l[3]);
+    return `<div><p class="label" style="margin-bottom:6px">${title}</p>${lines.length ? `<div class="tablebox" style="margin-top:0"><table class="mis"><thead><tr><th>${title.split(" ").pop()}</th><th class="num">Received</th><th class="num">Resolved</th><th class="num">Open now</th><th class="num">Past 24h</th><th class="num">Past 30</th></tr></thead><tbody>${
+      lines.map(l => `<tr><td>${esc(l[0])}</td>${l.slice(1).map(n => `<td class="num">${n}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted" style="margin:0">No complaints.</p>`}</div>`;
+  };
+  $("#dlg").innerHTML = `
+    <div class="dlg-head"><div><p class="label">MIS report · Sangam Bank Grievance Desk</p><h2 style="font-size:22px">${esc(monthName(month))}</h2></div><button class="x no-print" id="dlgX" type="button" aria-label="Close">×</button></div>
+    <div class="dlg-body">
+      <div class="mis-bar no-print">
+        <div class="field"><label for="r-month">Month</label><select id="r-month">${months.map(m => `<option value="${m}" ${m===month?"selected":""}>${esc(monthName(m))}</option>`).join("")}</select></div>
+        <div class="actions"><button class="btn" id="r-csv" type="button">Download CSV</button><button class="btn ghost" id="r-print" type="button">Print or save as PDF</button></div>
+      </div>
+      <div class="tiles mis-tiles">${tiles.map(([l, n]) => `<div class="tile"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("")}</div>
+      <p class="muted" style="margin:0;font-size:12.5px">Received and resolved count complaints lodged or closed in ${esc(monthName(month))}. “Open now”, “Past 24h” and “Past 30” are as of ${esc(fmtDT(new Date().toISOString()))}. Urgent (fraud) complaints received: ${got.filter(c => c.urgent).length}. Escalated above complaints officer: ${got.filter(c => c.level > 0).length}.</p>
+      ${breakdown("By service", SERVICES.map(s => s.id), k => SVC[k].name, c => c.service)}
+      ${breakdown("By team", Object.keys(TEAMS), k => TEAMS[k], c => c.team)}
+    </div>`;
+  $("#dlgX").onclick = () => $("#dlg").close();
+  $("#r-month").onchange = e => openReport(e.target.value);
+  $("#r-csv").onclick = () => downloadCsv(got, month);
+  $("#r-print").onclick = () => window.print();
+  if (!$("#dlg").open) $("#dlg").showModal();
+}
+function downloadCsv(rows, month){
+  // Leading = + - @ would run as a formula in Excel, so those cells get a ' prefix.
+  const cell = v => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const head = ["Reference","Lodged","Service","Issue","Urgent","Amount (INR)","Team","Routed by","Escalation level","Status","Hours open","Past 24-hour target","Days open","Past 30 days","Customer","Mobile (masked)"];
+  const lines = rows.map(c => [c.ref, c.createdAt.slice(0,10), SVC[c.service]?.name, c.issue, c.urgent ? "Yes" : "No", c.amount ?? "", TEAMS[c.team] || "",
+    ROUTED_BY[c.routedBy] || "", LEVELS[c.level || 0], STATUS[c.status], hoursOpen(c), isOverdue(c) ? "Yes" : "No", daysOpen(c), isLate(c) ? "Yes" : "No", c.name, c.mobile]);
+  const blob = new Blob(["﻿" + [head, ...lines].map(l => l.map(cell).join(",")).join("\r\n")], {type: "text/csv;charset=utf-8"});
+  const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(blob), download: `grievance-desk-${month}.csv`});
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 /* ---------- boot ---------- */
 if (!LIVE){
   const b = $("#banner"); b.hidden = false;
-  b.textContent = window.supabase || !(CFG.supabaseUrl && CFG.supabaseAnonKey)
+  b.textContent = FORCED_DEMO ? "Demo mode for reviewers: sample complaints only. Nothing you enter is saved, and it disappears when you close this tab. Any email and password opens the Staff tab."
+    : window.supabase || !(CFG.supabaseUrl && CFG.supabaseAnonKey)
     ? "Demo mode: this site isn't connected to a database yet, so complaints are kept only in this tab and disappear when you close it."
     : "Couldn't load the database library. Check your connection and reload the page.";
 }

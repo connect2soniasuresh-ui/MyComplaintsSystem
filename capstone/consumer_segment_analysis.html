@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Consumer and Segment Analysis</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Grievance Desk</h1>
+  <div class="sub">A secure, RBI-ready complaints desk for India's smaller banks<br>
+  <b>Consumer and Segment Analysis</b></div>
+  <table class="meta">
+    <tr><td>Course</td><td>Product Management with AI, IIM Calcutta (Prof. Saravana Jaikumar)</td></tr>
+    <tr><td>Assignment</td><td>Capstone Project: Strategize, Build and Go-to-Market (deliverable 2 of 4)</td></tr>
+    <tr><td>Product</td><td>Grievance Desk, demo instance “Sangam Bank”. Live: https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/ (add <span class="mono">?demo</span> to explore every screen without an account)</td></tr>
+    <tr><td>Group</td><td>Group 5: Sonia, Chetana, Abhay, Gayatri, Padma Priya, Amir, Urmila</td></tr>
+    <tr><td>Date</td><td>November 2026</td></tr>
+  </table>
+
+  <h3>Contents</h3>
+  <ol>
+    <li>Summary</li>
+    <li>Research approach and evidence base</li>
+    <li>What the market evidence tells us</li>
+    <li>Segmenting the buyers: which banks</li>
+    <li>Segmenting the end users: which customers</li>
+    <li>Primary persona: Rajesh Kulkarni, Principal Nodal Officer</li>
+    <li>Supporting personas: CEO, complaints officer, bank customer</li>
+    <li>Decision drivers and the buying journey</li>
+    <li>The customer's complaint journey</li>
+    <li>How these insights shaped the product</li>
+    <li>Validation plan: what we still need to prove</li>
+    <li>Sources</li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<h2>1. Summary</h2>
+<p>Grievance Desk has <b>two customers</b>. The <b>buyer</b> is a bank, and the person who feels the pain most is its <b>Principal Nodal Officer</b>, the officer RBI holds responsible for complaints. The <b>end user</b> is the bank's own customer, who needs to complain safely and know what is happening. The product only works if it wins both.</p>
+<div class="box">
+<b>Our choices, in one paragraph.</b> We target <b>Tier 2 and Tier 3 urban cooperative banks (UCBs) with 5 to 60 branches</b> first, roughly 600 banks, because they face rising RBI scrutiny and the 30-day complaint rule with small IT teams and paper or Excel processes. <b>Small finance banks and the 28 newly merged regional rural banks</b> are the second wave. Our primary persona is <b>Rajesh Kulkarni</b>, a 46-year-old Principal Nodal Officer at a 28-branch Pune UCB. He is accountable when a complaint goes past Day 30, but he has no live view of his cases (our product puts every case on a 24-hour clock) and spends a late night every month building the board report by hand. On the customer side we design for the <b>least confident user</b>: a semi-urban or rural customer, often a fraud victim, who may write in Hindi or Marathi and may be tempted to share an OTP.
+</div>
+<p><b>Evidence:</b> RBI's Ombudsman received <b>13.34 lakh complaints in FY2024-25, up 13.6%</b> in a year, and loans, cards, mobile banking and deposits make up about 80% of them. Card and internet fraud is <b>56% of all bank fraud cases by count</b>. Only <b>37.8%</b> of Indians aged 15+ can do online banking. Each of these findings maps to a feature we built (Section 10).</p>
+<p class="note"><b>Honest status of our research.</b> This analysis is built on published RBI and government data, on the regulations that shape the buyer's job, and on our product walkthroughs. Our 15 to 20 interviews with nodal officers and CEOs are scheduled in the execution plan (W2 to W4). Every claim below is tagged so readers can see what is proven and what we still need to validate: <span class="tag">D</span> published data, <span class="tag g">R</span> regulation or rule, <span class="tag r">H</span> team hypothesis to test in interviews.</p>
+
+<!-- 2 -->
+<h2>2. Research approach and evidence base</h2>
+<table>
+  <tr><th style="width:24%">Source type</th><th>What we used</th><th style="width:28%">What it told us</th></tr>
+  <tr><td>Regulator data <span class="tag">D</span></td><td>RBI Annual Report of the Ombudsman Scheme 2024-25; RBI Report on Trend and Progress of Banking in India 2024-25; RBI Annual Report 2024-25 (fraud data)</td><td>Complaint volume, categories and growth; number and tiers of UCBs; fraud mix</td></tr>
+  <tr><td>Government data <span class="tag">D</span></td><td>Ministry of Finance notification on RRB amalgamation (May 2025); NSO Comprehensive Annual Modular Survey (CAMS) 2022-23</td><td>Size of the RRB segment; digital skills of end customers</td></tr>
+  <tr><td>Regulations <span class="tag g">R</span></td><td>RBI Integrated Ombudsman Scheme 2021 (30-day rule); RBI directions on customer liability in unauthorised electronic transactions; grievance redressal directions for UCBs; DPDP Act 2023</td><td>The buyer's legal job: reply within 30 days, name a nodal officer, protect data, act fast on fraud</td></tr>
+  <tr><td>Enforcement record <span class="tag">D</span></td><td>RBI penalty orders on cooperative banks (for example, Panchsheel Mercantile Co-operative Bank, Surat, September 2025, for breaching customer-liability directions on unauthorised electronic transactions)</td><td>Non-compliance has real, public consequences for small banks</td></tr>
+  <tr><td>Product walkthroughs</td><td>Mini Project 2 and 3 prototype reviews; demo sessions run in the team</td><td>Which screens explain the value fastest (OTP refusal, 24-hour clock)</td></tr>
+  <tr><td>Primary interviews <span class="tag r">H</span></td><td>Planned: 15 to 20 interviews with UCB, SFB and RRB nodal officers and CEOs, plus 10 customer intercepts at branches (guide in Section 11)</td><td>To confirm or overturn the hypotheses marked <span class="tag r">H</span></td></tr>
+</table>
+
+<!-- 3 -->
+<h2 class="pb">3. What the market evidence tells us</h2>
+<table>
+  <tr><th style="width:38%">Finding</th><th style="width:12%">Evidence</th><th>So what for Grievance Desk</th></tr>
+  <tr><td><b>Complaints are rising fast.</b> 13,34,244 complaints under the RBI Integrated Ombudsman Scheme in FY2024-25, up 13.55% from 11,75,075 in FY2023-24. Disposal slipped from 95.1% to 93.1%.</td><td><span class="tag">D</span> RBI Ombudsman report 2024-25</td><td>Volume is outgrowing manual processes. Every complaint that reaches RBI is one the bank failed to close itself.</td></tr>
+  <tr><td><b>Banks are the main target.</b> Banks drew 81.5% of complaints handled by RBI Ombudsman offices; NBFCs 14.8%.</td><td><span class="tag">D</span> same</td><td>Banks first; NBFCs are a Year 2 adjacency.</td></tr>
+  <tr><td><b>Four categories dominate.</b> Loans and advances 29.3%, credit cards 17.2%, mobile and electronic banking 16.9%, deposit accounts 16.8%.</td><td><span class="tag">D</span> same</td><td>All four are among our 12 services. The issue list is weighted towards them.</td></tr>
+  <tr><td><b>Small UCBs have no RBI Ombudsman fallback.</b> The scheme covers UCBs only with deposits of ₹50 crore or more. Complaints against UCBs at RBI were just 3,369 in FY2024-25 (about 1% of the total), down 11.3%.</td><td><span class="tag">D</span> RBI, via Indian Cooperative</td><td>For customers of smaller UCBs, the bank's own desk is the only formal route, so it has to work. Low numbers at RBI likely reflect coverage and awareness, not happy customers <span class="tag r">H</span>.</td></tr>
+  <tr><td><b>UCBs are consolidating under tighter rules.</b> 1,457 UCBs at March 2025 (down from 1,926 in 2004). Seven mergers and eight licence cancellations in 2024-25. A four-tier regulatory framework since December 2022; 57.5% of UCBs are Tier 1.</td><td><span class="tag">D</span> RBI Trend and Progress 2024-25</td><td>Survivors are under pressure to look well run. Tier 2 and 3 banks (about 600) are big enough to pay and small enough to lack a CRM.</td></tr>
+  <tr><td><b>RRBs are now 28 large state banks.</b> 43 RRBs merged into 28 from 1 May 2025, with 22,000+ branches in about 700 districts.</td><td><span class="tag">D</span> Ministry of Finance</td><td>Fewer, larger RRBs mean bigger deals and one decision-maker per state: a strong second wave.</td></tr>
+  <tr><td><b>Fraud complaints are mostly digital.</b> 23,953 bank fraud cases in FY2024-25; card and internet fraud was 13,516 of them (56%).</td><td><span class="tag">D</span> RBI Annual Report 2024-25</td><td>Fraud must jump the queue, and the customer must be told to block first. RBI's zero-liability window is only 3 working days.</td></tr>
+  <tr><td><b>Many customers are not confident online.</b> Only 37.8% of people aged 15+ can do online banking; rural households trail urban ones on internet access (71% vs 87%).</td><td><span class="tag">D</span> NSO CAMS 2022-23</td><td>A 12-service form is hard for this group. They need a chat in their own words, plain language, and branch staff able to lodge on their behalf.</td></tr>
+  <tr><td><b>Breaches bring public penalties.</b> RBI regularly publishes monetary penalties on cooperative banks, including for customer-liability and KYC lapses.</td><td><span class="tag">D</span> RBI press releases</td><td>The nodal officer and CEO feel personal and reputational risk. Audit evidence is a buying driver.</td></tr>
+</table>
+
+<!-- 4 -->
+<h2 class="pb">4. Segmenting the buyers: which banks</h2>
+<p>We segmented RBI-regulated lenders on five criteria and scored each from 1 (poor) to 5 (strong). Weights reflect what matters most for a young, founder-led company: pain and fit first, then how quickly we can sell.</p>
+<table>
+  <tr><th style="width:23%">Segment (approx. count)</th><th>Pain (30%)</th><th>Product fit (25%)</th><th>Ability to pay (15%)</th><th>Speed to close (15%)</th><th>Reachability (15%)</th><th>Weighted score</th><th>Decision</th></tr>
+  <tr><td><b>UCBs, Tier 2 and 3</b> (~600)</td><td>5</td><td>5</td><td>3</td><td>4</td><td>5</td><td><b>4.6</b></td><td><b>Beachhead</b></td></tr>
+  <tr><td>UCBs, Tier 1 (~840, smallest)</td><td>4</td><td>5</td><td>1</td><td>4</td><td>4</td><td>3.8</td><td>Essential tier, via federations</td></tr>
+  <tr><td>Small finance banks (~11)</td><td>4</td><td>4</td><td>4</td><td>3</td><td>3</td><td>3.7</td><td>Second wave</td></tr>
+  <tr><td>RRBs (28, post-merger)</td><td>4</td><td>4</td><td>4</td><td>2</td><td>3</td><td>3.6</td><td>Second wave</td></tr>
+  <tr><td>Payments banks, fintechs</td><td>3</td><td>3</td><td>4</td><td>4</td><td>3</td><td>3.3</td><td>Opportunistic</td></tr>
+  <tr><td>NBFCs (~9,000)</td><td>4</td><td>3</td><td>3</td><td>3</td><td>2</td><td>3.15</td><td>Year 2</td></tr>
+  <tr><td>Large public and private banks</td><td>3</td><td>1</td><td>5</td><td>1</td><td>1</td><td>2.2</td><td>Not targeted</td></tr>
+</table>
+<p class="small">Counts: UCBs from RBI Trend and Progress 2024-25 (1,457 total, 57.5% Tier 1, so about 840 Tier 1 and about 620 Tier 2 to 4); RRBs from the Ministry of Finance; SFBs and NBFCs approximate. Scores are the team's judgement from the evidence in Section 3 and will be re-scored after interviews.</p>
+
+<div class="box"><b>Beachhead definition.</b> RBI-regulated urban cooperative banks in Tier 2 or 3, with 5 to 60 branches, starting in <b>Maharashtra and Gujarat</b>, where most UCBs are. Typical profile <span class="tag r">H</span>: 20 to 150 complaints a week, 1 to 10 staff handling them part-time, a core-banking system from an outside vendor, no CRM, and complaints tracked in branch registers, a shared mailbox and an Excel sheet.</div>
+
+<h3>4.1 Why this beachhead wins</h3>
+<ul>
+  <li><b>Highest pain for the size of the team.</b> The same 30-day rule and inspection expectations as a big bank, but no CRM and a small IT budget <span class="tag g">R</span>.</li>
+  <li><b>Best product fit.</b> Lockers, cheques, deposits and branch service, the services cooperative banks are known for, are all in our form. Large-bank CRMs are overkill.</li>
+  <li><b>Reachable as a group.</b> State UCB federations and the national federation (NAFCUB) give us one door to hundreds of banks. Nodal officers' names are public on bank websites.</li>
+  <li><b>References compound.</b> Cooperative bankers trust what other cooperative bankers use <span class="tag r">H</span>, so three pilot banks in one state can unlock the rest.</li>
+</ul>
+
+<!-- 5 -->
+<h2>5. Segmenting the end users: which customers</h2>
+<p>The bank buys, but its customers decide whether the desk is used. We segmented them by <b>digital confidence</b> and <b>urgency</b>, the two things that most change what they need from a complaint channel.</p>
+<table>
+  <tr><th style="width:20%">Customer segment</th><th>Who they are</th><th>What they need</th><th style="width:28%">What we built for them</th></tr>
+  <tr><td><b>Fraud victims</b> (urgent)</td><td>Someone who just lost money to a card, UPI or phishing scam. Anxious and racing the 3-day zero-liability window.</td><td>Be told what to do first; be taken seriously at once; not be phished again</td><td>Fraud issues auto-flagged urgent and routed to the Fraud cell; “block first, report in 3 days” guidance; AI catches fraud filed under the wrong category</td></tr>
+  <tr><td><b>Less confident, vernacular users</b></td><td>Semi-urban and rural customers, small traders, many older users. Use WhatsApp, not forms. 62% of adults can't bank online <span class="tag">D</span>.</td><td>Explain the problem in their own words and language; not have to pick from 50 issue types</td><td>AI Complaint Assistant replies in the customer's language and fills in the form; plain-English copy; branch staff can lodge for walk-ins</td></tr>
+  <tr><td><b>Digital-first payment users</b></td><td>Urban, UPI-heavy, often younger. Complain about failed or wrong transfers.</td><td>Speed, a reference number, status without calling</td><td>2-minute form with UTR field; instant reference; self-service tracking</td></tr>
+  <tr><td><b>Borrowers and depositors</b></td><td>Home, gold and vehicle loan customers, FD holders, pensioners. Issues are slower but high value (EMIs, interest, documents).</td><td>Proof the bank is acting; a written trail; a route if the bank stalls</td><td>Timestamped history; “Waiting for you” replies on the same page; RBI Ombudsman route shown after Day 30</td></tr>
+</table>
+<p><b>Design rule:</b> design for the least confident customer and the most anxious one. If a rural fraud victim can lodge safely in two minutes, every other customer can too.</p>
+
+<!-- 6 -->
+<h2 class="pb">6. Primary persona: Rajesh Kulkarni, Principal Nodal Officer</h2>
+<p class="small">A composite built from the role's regulatory duties <span class="tag g">R</span> and the segment profile <span class="tag">D</span>. Quotes are illustrative of the hypotheses we will test, not interview transcripts. They will be replaced with real quotes after W2 to W4.</p>
+<div class="two">
+<div>
+<p><b>Profile</b><br>Age 46. Principal Nodal Officer and Head of Customer Service at a Tier 3 urban cooperative bank in Pune: 28 branches, about 3.5 lakh customers, roughly 40 complaints a day across all channels, 4 people handling them part-time.</p>
+<p><b>Background</b><br>Joined as a clerk 22 years ago and rose through branch operations. Confident with the core-banking system and Excel, cautious with new tech. His name and phone number are on the bank's website as nodal officer <span class="tag g">R</span>, so escalations land on his desk personally. Reports to the CEO and presents to the board's Customer Service Committee every quarter.</p>
+<p><b>A typical week</b><br>Collects complaint registers scanned by branches; reads the shared complaints mailbox; phones branch managers for updates; updates a master Excel sheet; chases fraud cases with the card team. Once a month he stays late to build the board report by hand.</p>
+</div>
+<div>
+<p><b>Goals</b></p>
+<ul><li>No complaint crosses Day 30, and nothing reaches RBI</li><li>Pass the next RBI inspection without scrambling for evidence</li><li>Look in control in front of the CEO and the board</li><li>Protect customers from fraud, and from oversharing their secrets</li></ul>
+<p><b>Frustrations</b></p>
+<ul><li>“I find out a complaint is late when the customer calls the CEO.” <span class="tag r">H</span></li><li>“People email me their OTP and Aadhaar. I don't want that in my inbox.” <span class="tag r">H</span></li><li>“The board report takes me a whole evening every month.” <span class="tag r">H</span></li><li>“Our IT vendor quotes six months for anything new.” <span class="tag r">H</span></li></ul>
+</div>
+</div>
+
+<h3>6.1 Needs, motivations, behaviours and decision drivers</h3>
+<table>
+  <tr><th style="width:20%">Dimension</th><th>What we believe</th><th style="width:22%">Evidence</th></tr>
+  <tr><td><b>Functional needs</b></td><td>One list of every complaint from every channel; a running clock per case; fraud first; a monthly summary for the board and RBI returns; an audit trail for inspectors</td><td><span class="tag g">R</span> 30-day rule, nodal officer duties; <span class="tag r">H</span> channel mix</td></tr>
+  <tr><td><b>Motivations</b></td><td>Avoid personal blame; protect the bank's standing with RBI in a period of consolidation; be seen as modernising</td><td><span class="tag">D</span> mergers, licence cancellations, penalties</td></tr>
+  <tr><td><b>Behaviours</b></td><td>Learns from peers, not ads: federation meetings, WhatsApp groups of cooperative-bank officers, vendor user meets, auditors. Prefers a demo to a brochure. Tests anything new on a few branches first.</td><td><span class="tag r">H</span> to confirm in interviews</td></tr>
+  <tr><td><b>Decision drivers</b> (ranked)</td><td>1. Regulatory safety (will it stand up to an inspector?) 2. Simplicity for branch staff 3. Data stays in India, nothing to install 4. Annual cost the board will approve, below one clerk's salary 5. A peer bank already uses it</td><td><span class="tag r">H</span> ranking to test with a card sort</td></tr>
+  <tr><td><b>Objections</b></td><td>“Our customers won't use a website.” “What if the AI gets it wrong?” “Will RBI accept this as our grievance system?” “What happens to our data if you shut down?”</td><td><span class="tag r">H</span></td></tr>
+  <tr><td><b>Information sources</b></td><td>State UCB federation and NAFCUB, RBI circulars, cooperative-sector press, core-banking vendor, statutory and concurrent auditors, annual sector conferences</td><td><span class="tag r">H</span></td></tr>
+</table>
+
+<h3>6.2 Jobs to be done</h3>
+<ul>
+  <li><b>Functional:</b> “When a complaint comes in through any channel, help me log it, resolve it within 30 days, and prove that we did.”</li>
+  <li><b>Risk:</b> “Keep customers' secrets out of our systems, and get fraud cases to the right people today.”</li>
+  <li><b>Reporting:</b> “At month end, give me the numbers the board and RBI ask for without a night in Excel.”</li>
+  <li><b>Emotional and social:</b> “Let me face the board and RBI inspectors with confidence.”</li>
+</ul>
+
+<!-- 7 -->
+<h2 class="pb">7. Supporting personas</h2>
+<table>
+  <tr><th style="width:22%">Persona</th><th>Role in the decision</th><th>What they care about</th><th style="width:28%">What wins them</th></tr>
+  <tr><td><b>Meera Deshpande, 54, CEO</b> (economic buyer)</td><td>Signs the contract and takes it to the board</td><td>RBI standing, reputation, cost, board optics</td><td>“Past 24-hour target” and “Past 30 days” tiles at zero; a monthly report she can table at the board; a fee below one clerk's salary; a peer reference</td></tr>
+  <tr><td><b>Sachin More, 31, Complaints officer</b> (daily user)</td><td>Must adopt it, or the bank goes back to Excel</td><td>Simplicity; not being blamed; less phone-chasing</td><td>One queue, urgent and oldest first; the full story of a case in one place; AI routing that sends cases to the right team</td></tr>
+  <tr><td><b>Compliance officer / internal auditor</b></td><td>Can veto</td><td>Evidence, data protection, DPDP</td><td>Timestamped history; logged contact reveals; confidential-data guard in the database</td></tr>
+  <tr><td><b>IT head / core-banking vendor</b></td><td>Can veto, or be a channel partner</td><td>No integration work, security</td><td>Hosted, nothing to install, Mumbai region, row-level security, strict CSP</td></tr>
+  <tr><td><b>Lakshmi Pawar, 52, bank customer</b> (end user)</td><td>Decides whether the desk is used</td><td>Getting her money back; being heard; not being cheated twice</td><td>Chat in Marathi; told to block her card first; a reference number at once; “we will never ask for your OTP”</td></tr>
+</table>
+
+<h3>7.1 End-user persona: Lakshmi Pawar</h3>
+<div class="two">
+<div>
+<p>Age 52. Runs a small tailoring business in a town near Satara. Savings account and a gold loan with the cooperative bank for 15 years. Uses WhatsApp and UPI on her phone, mostly in Marathi. Her son helps with anything “official”.</p>
+<p><b>Moment of need:</b> she got a call from “the bank” asking her to confirm a code, and ₹18,000 left her account. She is frightened and embarrassed, and she doesn't know whether to go to the branch, call, or write.</p>
+</div>
+<div>
+<p><b>Needs</b></p>
+<ul><li>Tell someone what happened, in her own words and language</li><li>Know what to do right now (block the card)</li><li>A number to quote and a way to check progress without visiting the branch again</li><li>Never be asked for a code again by anyone claiming to be the bank</li></ul>
+<p class="small">Composite persona built from fraud and digital-skills data <span class="tag">D</span>. To validate with branch intercepts.</p>
+</div>
+</div>
+
+<!-- 8 -->
+<h2>8. Decision drivers and the buying journey</h2>
+<table>
+  <tr><th style="width:16%">Stage</th><th>What Rajesh is doing</th><th>What he needs to move on</th><th style="width:26%">Our asset</th></tr>
+  <tr><td>Trigger</td><td>An RBI inspection finding, a customer escalation to the CEO, or a peer bank's story</td><td>A reason to act now</td><td>Federation workshop on the 30-day rule and DPDP; “complaint of the week” posts</td></tr>
+  <tr><td>Explore</td><td>Asks peers and the federation what others use</td><td>Proof it is built for banks like his</td><td>3-minute demo video: OTP refusal and the 24-hour clock</td></tr>
+  <tr><td>Evaluate</td><td>Sees a demo branded with his bank's name; brings in IT and compliance</td><td>Security and regulatory confidence</td><td>Branded demo; security note; DPDP mapping; <span class="mono">?demo</span> sandbox</td></tr>
+  <tr><td>Pilot</td><td>Runs 3 to 5 branches for 60 days</td><td>Visible results without risk</td><td>Free pilot with agreed success criteria; monthly report as the scorecard</td></tr>
+  <tr><td>Decide</td><td>CEO takes it to the board</td><td>A business case the board will approve</td><td>ROI one-pager; board-note template; pilot report</td></tr>
+  <tr><td>Expand</td><td>Rolls out to all branches and tells peers</td><td>Easy launch to customers</td><td>Customer launch kit (posters, QR codes, SMS); referral offer</td></tr>
+</table>
+
+<!-- 9 -->
+<h2 class="pb">9. The customer's complaint journey</h2>
+<p>Lakshmi's journey today, with a paper register and email, and with Grievance Desk:</p>
+<table>
+  <tr><th style="width:15%">Step</th><th>Today</th><th>Feeling</th><th>With Grievance Desk</th></tr>
+  <tr><td>Something goes wrong</td><td>Not sure where to complain: branch, phone or letter</td><td>Panic</td><td>“Lodge a complaint” link on the bank website, passbook and branch QR code</td></tr>
+  <tr><td>Explain it</td><td>Writes a letter or tells a clerk; may include her OTP or card number</td><td>Confused, exposed</td><td>Chats in Marathi; AI fills in the form; any OTP or card number is blocked before it is sent</td></tr>
+  <tr><td>First response</td><td>No acknowledgement, or an entry in a register she never sees</td><td>Ignored</td><td>Reference number at once and a reply-by date; fraud flagged urgent with block-first advice</td></tr>
+  <tr><td>Waiting</td><td>Visits or calls the branch to ask for status</td><td>Frustrated</td><td>Tracks online with reference and mobile; replies on the same page if the bank asks</td></tr>
+  <tr><td>Resolution</td><td>Hears back late, or not at all</td><td>Distrust</td><td>Officer's update shown in the history; RBI Ombudsman route shown if she disagrees or Day 30 passes</td></tr>
+</table>
+
+<!-- 10 -->
+<h2>10. How these insights shaped the product</h2>
+<p>Each feature in the working product traces back to an insight. A reviewer can see every one in the live site (<span class="mono">?demo</span> for the staff screens).</p>
+<table>
+  <tr><th style="width:34%">Insight</th><th style="width:32%">Feature built</th><th>Where to see it</th></tr>
+  <tr><td>Rajesh learns about late cases only when they escalate</td><td>A 24-hour resolution clock on every case (RBI's 30 days as the outer limit); “Past 24-hour target” and “Past 30 days” tiles; auto-escalation after 4 hours without action, then at 12 and 20 hours</td><td>Staff tab: tiles, queue, case history</td></tr>
+  <tr><td>56% of fraud cases are card and internet fraud, and the zero-liability window is 3 days</td><td>Fraud issues flagged urgent; block-first guidance; Fraud cell routing; ₹1 lakh+ fraud goes to the Principal Nodal Officer</td><td>Lodge tab (choose “Unauthorised transaction”); Staff queue</td></tr>
+  <tr><td>Customers overshare secrets, and fraudsters pose as staff</td><td>Confidential-data guard in the browser and the database; staff messages asking for secrets blocked; no uploads</td><td>Type “OTP 123456” in any box</td></tr>
+  <tr><td>62% of adults can't bank online; many prefer their own language</td><td>AI Complaint Assistant: describe it in your own words; replies in the customer's language</td><td>Lodge tab → “Describe it in a chat” (live site)</td></tr>
+  <tr><td>“Where is my complaint?” calls waste branch time</td><td>Reference number plus mobile tracking; “Waiting for you” replies</td><td>Track tab</td></tr>
+  <tr><td>Inspectors want evidence; DPDP requires data minimisation</td><td>Timestamped history; masked contacts with logged reveals; last 4 digits only; India hosting</td><td>Case detail → “Show contact details”</td></tr>
+  <tr><td>Complaints reach the wrong team and sit for days</td><td>Rules route on lodging; AI re-routes once with a reason and risk rating; staff can override</td><td>Case detail → Routing and escalation</td></tr>
+  <tr><td><b>New for the capstone:</b> Rajesh loses an evening a month building the board report</td><td><b>Monthly report:</b> received, resolved, % within 24 hours and 30 days, average time, open past 24 hours and past 30 days, by service and by team; CSV download with masked contacts; print to PDF</td><td>Staff tab → “Monthly report”</td></tr>
+  <tr><td>Reviewers and prospects need to try it without an account</td><td><span class="mono">?demo</span> mode with sample cases; nothing saved</td><td>Live site with <span class="mono">?demo</span></td></tr>
+</table>
+<figure><img src="../strategy_assets/8-mis-report.jpg" alt="Monthly report dialog in the staff console"><figcaption>The monthly report, built for the nodal officer's board and RBI reporting (demo data).</figcaption></figure>
+
+<!-- 11 -->
+<h2 class="pb">11. Validation plan: what we still need to prove</h2>
+<h3>11.1 Riskiest hypotheses</h3>
+<table>
+  <tr><th style="width:5%">#</th><th>Hypothesis</th><th style="width:30%">Test</th><th style="width:22%">We are right if…</th></tr>
+  <tr><td>1</td><td>Tier 2 and 3 UCBs track complaints on paper, email or Excel, with no live view of the 30-day clock</td><td>Interviews with 10+ nodal officers</td><td>≥ 7 of 10 have no system with a per-case clock</td></tr>
+  <tr><td>2</td><td>Regulatory safety outranks price as a decision driver</td><td>Card sort of 6 drivers in interviews</td><td>Regulatory safety ranked in the top 2 by most</td></tr>
+  <tr><td>3</td><td>₹30,000 a month is within a 25-branch UCB's approval limit</td><td>Van Westendorp price questions; ask who signs at what amount</td><td>Acceptable range includes ₹25–35k a month</td></tr>
+  <tr><td>4</td><td>The monthly board report takes at least half a day by hand</td><td>Ask them to walk us through their last report</td><td>Median ≥ 4 hours</td></tr>
+  <tr><td>5</td><td>Customers will use an online desk if branches promote it</td><td>10 branch intercepts; then share of complaints lodged online during the pilot</td><td>≥ 60% online by the end of the pilot</td></tr>
+  <tr><td>6</td><td>Customers trust a chat assistant more when it refuses their OTP</td><td>Show the OTP refusal to customers in intercepts</td><td>Most say it makes them trust the bank more</td></tr>
+  <tr><td>7</td><td>A 24-hour resolution target is realistic for most complaints at a small bank</td><td>Ask officers how long a typical case takes; then pilot data from the monthly report</td><td>≥ 70% resolved within 24 hours by the end of the pilot</td></tr>
+</table>
+
+<h3>11.2 Interview guide for nodal officers (30 minutes)</h3>
+<ol>
+  <li>Walk me through the last complaint you handled, from the moment it came in to the final reply.</li>
+  <li>Through which channels do complaints arrive? Roughly how many a week? Who logs them, and where?</li>
+  <li>How do you know which complaints are close to 30 days? When did one last go past it, and what happened?</li>
+  <li>How do fraud complaints reach you today? How fast?</li>
+  <li>Have customers ever sent you an OTP, card number or Aadhaar copy? What did you do with it?</li>
+  <li>Show me your last board or RBI complaints report. How long did it take?</li>
+  <li>What did the last RBI inspection say about grievance handling?</li>
+  <li>If you could change one thing about how complaints are handled, what would it be?</li>
+  <li><i>(Demo.)</i> What stands out? What worries you? Who else would need to see this?</li>
+  <li>Rank these from most to least important: regulatory safety, price, ease for branch staff, data in India, peer recommendation, AI features.</li>
+  <li>At what monthly price would this be too cheap to trust, a bargain, getting expensive, too expensive? Who approves a spend of that size?</li>
+</ol>
+
+<h3>11.3 Recruiting and research log</h3>
+<p>Recruit through state UCB federations, the team's banking contacts and LinkedIn: 10 to 12 UCB nodal officers or CEOs, 3 to 4 SFB or RRB contacts, and 10 customer intercepts at two branches. Each interview is logged in the table below and synthesised in W4 to update this document (persona v2).</p>
+<table>
+  <tr><th>#</th><th>Bank type and size</th><th>Role</th><th>Date</th><th>Interviewer</th><th>Top pain (their words)</th><th>Hypotheses confirmed or overturned</th></tr>
+  <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<!-- 12 -->
+<h2>12. Sources</h2>
+<ol class="small">
+  <li>Reserve Bank of India, <i>Annual Report of the Ombudsman Scheme 2024-25</i> (rbi.org.in, publication id 23441). Figures as reported by Outlook Money, CAalley and AffairsCloud, December 2025.</li>
+  <li>Reserve Bank of India, <i>Report on Trend and Progress of Banking in India 2024-25</i> (rbi.org.in, publication id 23640); Business Standard, “Number of UCBs declines to 1,457 in FY25”, December 2025.</li>
+  <li>Indian Cooperative, “UCBs see decline in complaints: RBI releases Report”: complaints against UCBs and scheme coverage threshold.</li>
+  <li>Reserve Bank of India, <i>Annual Report 2024-25</i>, fraud statistics, as reported by Deccan Chronicle, May 2025.</li>
+  <li>Ministry of Finance notification on amalgamation of Regional Rural Banks, effective 1 May 2025, as reported by Business Standard and The Week, April–May 2025.</li>
+  <li>National Statistics Office, <i>Comprehensive Annual Modular Survey (CAMS) 2022-23</i>, as summarised in secondary sources.</li>
+  <li>Reserve Bank of India press release: monetary penalty on Panchsheel Mercantile Co-operative Bank Ltd, Surat, September 2025.</li>
+  <li>Reserve Bank of India, <i>Integrated Ombudsman Scheme, 2021</i>; RBI directions on limiting customer liability in unauthorised electronic banking transactions; Digital Personal Data Protection Act, 2023.</li>
+</ol>
+<p class="small">Some figures are taken from press reports of RBI publications. Exact tables should be checked against the RBI originals before external use.</p>
+
+</body>
+</html>

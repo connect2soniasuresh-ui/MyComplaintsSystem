@@ -4,9 +4,11 @@
 --
 --   delete from public.complaints where mobile like '90000000%';
 --
--- Complaints are backdated so the 30-day clock and the escalation matrix have something to show:
--- new, urgent fraud, no action for 7 days, Day 22, Day 27, resolved, waiting for the customer,
+-- Complaints are backdated so the clocks and the escalation matrix have something to show:
+-- new, urgent fraud, a long-running loan case, Day 22, Day 27, resolved, waiting for the customer,
 -- and a customer complaining for the third time in 90 days.
+-- With the 24-hour target, every open case backdated a day or more escalates to the
+-- Internal Ombudsman / GM (open 20+ hours); the comments below give each case's original purpose.
 
 -- Lodges a complaint through the real lodge function (so routing and checks apply),
 -- then moves it and its history `days` into the past.

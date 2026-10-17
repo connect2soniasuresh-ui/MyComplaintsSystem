@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 <div class="wrap">
@@ -31,7 +31,7 @@
   <!-- LODGE -->
   <section class="view" id="view-lodge">
     <h2>Tell us what went wrong</h2>
-    <p class="lede">You get a reference number as soon as you submit. We reply within 30 days. If we don't, or you're unhappy with our reply, you can take the complaint to the RBI Ombudsman.</p>
+    <p class="lede">You get a reference number as soon as you submit. We aim to resolve every complaint within 24 hours, and give our final reply within 30 days at the latest. If we don't, or you're unhappy with our reply, you can take the complaint to the RBI Ombudsman.</p>
 
     <div class="lodge" id="lodgeWrap">
       <div class="lodge-main">
@@ -114,7 +114,7 @@
           <p class="label">What happens next</p>
           <ol>
             <li><b>Day 0</b><span>You get a reference number right away.</span></li>
-            <li><b>Day 1–7</b><span>A complaints officer reviews it and may ask you for more information.</span></li>
+            <li><b>24 hours</b><span>Our target to resolve it. A complaints officer may ask you for more information.</span></li>
             <li><b>Day 30</b><span>Latest date for our final reply.</span></li>
             <li><b>After 30</b><span>No reply, or unhappy with it? Escalate to the RBI Ombudsman at <span class="mono">cms.rbi.org.in</span>.</span></li>
           </ol>
@@ -155,7 +155,7 @@
       <h2>Staff queue</h2>
       <div class="staffbar">
         <span class="muted" id="staffWho"></span>
-        <span class="actions"><button class="btn ghost" id="refreshBtn" type="button">Refresh</button><button class="btn ghost" id="signoutBtn" type="button">Sign out</button></span>
+        <span class="actions"><button class="btn ghost" id="reportBtn" type="button">Monthly report</button><button class="btn ghost" id="refreshBtn" type="button">Refresh</button><button class="btn ghost" id="signoutBtn" type="button">Sign out</button></span>
       </div>
       <div class="tiles" id="tiles"></div>
       <div class="filters">
@@ -178,6 +178,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="config.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

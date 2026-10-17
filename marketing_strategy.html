@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product Marketing Strategy</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --ink:#1b2430; --muted:#5a6675; --accent:#7a5a14; --accent2:#0e3b5c; --soft:#f7f1e3; --line:#d9d2c3; --warn:#fff6e0; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color:var(--ink); font-size:10.5pt; line-height:1.45; background:#fff; margin:0; }
+  h1 { font-size:24pt; color:var(--accent2); margin:0 0 4px; }
+  h2 { font-size:15pt; color:var(--accent2); border-bottom:2px solid var(--accent); padding-bottom:3px; margin:22px 0 10px; page-break-after:avoid; }
+  h3 { font-size:11.5pt; margin:14px 0 6px; color:var(--ink); page-break-after:avoid; }
+  p { margin:5px 0 8px; }
+  ul, ol { margin:4px 0 8px 18px; padding:0; }
+  li { margin:2px 0; }
+  table { width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:9.5pt; page-break-inside:auto; }
+  tr { page-break-inside:avoid; }
+  th { background:var(--accent2); color:#fff; text-align:left; padding:5px 6px; font-weight:600; }
+  td { border:1px solid var(--line); padding:5px 6px; vertical-align:top; }
+  tr:nth-child(even) td { background:#fbf9f4; }
+  .cover { page-break-after:always; padding-top:50px; }
+  .sub { font-size:13pt; color:var(--muted); margin-bottom:26px; }
+  .meta td { border:none; padding:3px 0; background:none !important; font-size:10.5pt; }
+  .meta td:first-child { width:170px; color:var(--muted); }
+  .box { background:var(--soft); border-left:4px solid var(--accent); padding:9px 12px; margin:8px 0 12px; page-break-inside:avoid; }
+  .note { background:var(--warn); border-left:4px solid #d69e00; padding:9px 12px; margin:8px 0 12px; font-size:9.5pt; page-break-inside:avoid; }
+  .quote { font-size:12pt; font-style:italic; color:var(--accent2); }
+  .two { display:flex; gap:14px; } .two > div { flex:1; }
+  .small { font-size:9pt; color:var(--muted); }
+  .pb { page-break-before:always; }
+  .tag { display:inline-block; font-size:8pt; padding:0 5px; border-radius:3px; background:#e3efe6; color:#1d5e33; font-weight:600; }
+  figure { margin:10px 0 16px; page-break-inside:avoid; }
+  figure img { width:100%; border:1px solid var(--line); border-radius:4px; display:block; }
+  figcaption { font-size:9pt; color:var(--muted); margin-top:4px; }
+  .tag.r { background:#fde9d9; color:#8a3b0a; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Grievance Desk</h1>
+  <div class="sub">A secure, RBI-ready complaints desk for India's smaller banks, with an AI complaint assistant and AI routing and escalation<br>
+  <b>Product Marketing Strategy &amp; Execution Plan</b></div>
+  <table class="meta">
+    <tr><td>Course</td><td>Product Management with AI, IIM Calcutta (Prof. Saravana Jaikumar)</td></tr>
+    <tr><td>Assignment</td><td>Mini Project 3: Product Marketing Strategy for Your AI-Powered Prototype</td></tr>
+    <tr><td>Prototype</td><td>Mini Project 2: “Sangam Bank Grievance Desk”, built with AI-assisted development on Supabase (Postgres, Mumbai region) and GitHub Pages. Live demo: https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/</td></tr>
+    <tr><td>Capstone group</td><td>Group 5</td></tr>
+    <tr><td>Team members</td><td>Sonia, Chetana, Abhay, Gayatri, Padma Priya, Amir, Urmila</td></tr>
+    <tr><td>Submission date</td><td>15 October 2026</td></tr>
+  </table>
+
+  <h3>Contents</h3>
+  <ol>
+    <li>Executive Summary and the Prototype</li>
+    <li>Market Context and Problem</li>
+    <li>Target Segment and Personas</li>
+    <li>Value Proposition and Positioning</li>
+    <li>Key Messaging and Communication Approach</li>
+    <li>Pricing and Business Model</li>
+    <li>Go-to-Market Plan: Channels, Launch Sequence and Activities</li>
+    <li>Execution Plan: Timeline, Milestones and Owners</li>
+    <li>Success Metrics, Budget and Risks</li>
+    <li>Appendix A. Prototype Walkthrough</li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<h2>1. Executive Summary and the Prototype</h2>
+<h3>1.1 Executive summary</h3>
+<p><b>Grievance Desk</b> is a white-label complaints website and staff console for banks. A customer lodges a complaint about any banking service, gets a reference number straight away, and tracks it. The bank's complaints officers work one shared queue in which every case shows a 30-day clock, matching the RBI rule that a bank must give its final reply within 30 days before the customer can go to the RBI Ombudsman. Our prototype runs as “Sangam Bank”, a fictional demo bank. Each customer bank gets its own branded instance.</p>
+<p>What sets it apart is <b>security and trust by design</b>. The form refuses OTPs, CVVs, PINs, full card numbers, Aadhaar and PAN, checking once in the browser and again in the database. Fraud complaints are flagged urgent automatically and the customer is told to block their card. Staff see contact details masked, and every reveal is logged. Data is stored in India. On top of this sit two AI features. The <b>AI Complaint Assistant</b> lets a customer simply describe the problem in a chat and turns that into a complete complaint. <b>AI routing and escalation</b> sends each complaint to the right team and escalates it automatically before Day 30.</p>
+<p>The <b>beachhead</b> is India's <b>urban cooperative banks (UCBs), small finance banks (SFBs) and regional rural banks (RRBs)</b>. They face the same RBI grievance expectations as large banks, but have small IT teams, no enterprise CRM, and often run complaints on paper registers, email and Excel.</p>
+<div class="box"><b>Strategy in one line:</b> Give a smaller bank a complaints desk it can trust and launch in under two weeks. It lets customers complain just by chatting, uses AI to route every case to the right team and escalate it before Day 30, and keeps customers' secrets out of the system.</div>
+<p><b>GTM motion:</b> account-based, founder-led sales through cooperative-bank federations, core-banking vendors and compliance consultants, backed by a 60-day pilot. <b>Business model:</b> annual SaaS subscription by bank size, plus a one-time setup fee. <b>Launch:</b> week of <b>18 January 2027</b>, with 3 pilot banks live and 2 paying banks by 31 March 2027.</p>
+
+<h3>1.2 What the prototype does today</h3>
+<table>
+  <tr><th style="width:24%">Capability</th><th>What it does (as built)</th><th style="width:17%">Who benefits</th></tr>
+  <tr><td>Guided 4-step complaint form</td><td>Covers <b>12 banking services</b> (accounts, debit cards and ATMs, credit cards, UPI/NEFT/IMPS/RTGS, internet and mobile banking, loans, deposits, cheques, branch service, insurance and investments, lockers, KYC) and <b>about 50 specific issue types</b>. Captures transaction date, amount, UTR/RRN and the outcome the customer wants. Works on mobile.</td><td>Customer</td></tr>
+  <tr><td>Instant reference number</td><td>Reference numbers like <span style="font-family:monospace">GD-261004-K7QZ8M2P</span> have 8 random characters so they can't be guessed. The receipt shows the timeline: Day 0 reference, Day 1–7 review, Day 30 final reply, then the RBI Ombudsman route.</td><td>Customer</td></tr>
+  <tr><td>Track and reply</td><td>Customers prove it's theirs with reference number plus registered mobile. Tracking locks for an hour after 5 wrong attempts. When the bank asks for more information (status “Waiting for you”), the customer replies on the same page.</td><td>Customer, call centre</td></tr>
+  <tr><td>Fraud triage</td><td>Unauthorised transactions, money sent to the wrong account and phishing are flagged <b>urgent</b> automatically and moved to the top of the queue. The customer is told to block the card first and report within 3 working days (RBI's zero-liability window).</td><td>Customer, bank risk team</td></tr>
+  <tr><td>Confidential-data guard</td><td>Blocks OTP, CVV, PIN, passwords, full card numbers (Luhn-checked), Aadhaar, PAN and full account numbers, <b>in the browser and again in the database</b>. Staff messages that <i>ask</i> for these are blocked too, which stops phishing-style requests. No file uploads.</td><td>Customer, Compliance, CISO</td></tr>
+  <tr><td>Staff queue and 30-day clock</td><td>Shared queue with tiles for Open, Urgent and open, Escalated, Past 30 days, and Resolved this month. Each case shows a progress bar (“Day 12 of 30”, “3 days past 30”). Search by reference or name, filter by status, service and team. Each row shows the case's team and escalation level. Urgent, escalated and oldest cases first.</td><td>Complaints officers, Head of grievance</td></tr>
+  <tr><td>Audit trail and privacy controls</td><td>Every status change and message is timestamped with the officer's identity. Staff see mobile and email masked; revealing them is a deliberate click logged with who and when. Staff sign-in only by invitation, with sign-out after 15 minutes of inactivity.</td><td>Compliance, Internal audit</td></tr>
+  <tr><td>Built-in RBI transparency</td><td>After 30 days, or when the bank closes a complaint the customer disagrees with, the tracker shows the RBI Ombudsman escalation route (cms.rbi.org.in, 14448).</td><td>Customer, Compliance</td></tr>
+  <tr><td>India data residency, low running cost</td><td>Static website plus hosted Postgres in the Mumbai region, with row-level security and no direct table access. Running costs are very low, and there's a demo mode for sales demos.</td><td>CTO, CFO</td></tr>
+  <tr><td><b>AI Complaint Assistant</b> (Section 1.3)</td><td>“Describe it in a chat” on the Lodge tab. The AI asks follow-up questions and fills in the form; the customer checks it, adds name and mobile, and submits.</td><td>Customer</td></tr>
+  <tr><td><b>AI routing and auto-escalation</b> (Section 1.3)</td><td>Rules route every complaint to one of nine teams the moment it's lodged; AI then re-routes it once, rates its risk and flags hidden fraud. An escalation matrix raises cases to Team lead, Principal Nodal Officer or Internal Ombudsman / GM. Staff can re-route; every step is logged with its reason and hidden from the customer.</td><td>Complaints officers, Nodal officer, Compliance</td></tr>
+</table>
+
+<h3>1.3 Where AI fits</h3>
+<p><b>Built with AI:</b> the prototype was designed and coded with an AI coding assistant on Supabase (hosted Postgres) and GitHub Pages. That's why a small team could build a production-grade, security-hardened app in weeks, and that speed is part of our cost advantage. <b>AI in the product</b> comes from two features, both built into the prototype. They run in a server-side function that calls Claude (Anthropic), so the API key never reaches the browser. Live demo: https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/</p>
+<table>
+  <tr><th style="width:24%">AI feature</th><th>What it does</th><th style="width:22%">Why it matters</th></tr>
+  <tr><td><span class="tag">Built</span><br><b>1. AI Complaint Assistant (chatbot)</b></td><td>The customer types the problem in their own words, for example “I paid ₹2,500 by UPI on 2 Oct, money left my account but the shop didn't get it”. The assistant identifies the service and issue (UPI, debit-but-not-credited), pulls out the date, amount and UTR, asks only for what's missing, and shows a summary. One click fills in the complaint form; the customer checks it, adds their name and mobile, and submits it to get a reference number. It replies in the customer's language (English, Hindi or another Indian language) and fills in the form in English. Every message goes through the existing confidential-data guard, so if the customer types an OTP or PIN the assistant refuses it and explains why. It will never ask for one.</td><td>Removes the hardest part of complaining (choosing among 12 services and about 50 issues), so customers drop off less and complaints are complete. This matters for rural and less tech-savvy customers.</td></tr>
+  <tr><td><span class="tag">Built</span><br><b>2. AI routing and auto-escalation</b></td><td><b>Routing:</b> AI reads each complaint and sends it to one of nine teams (Cards &amp; ATMs, Payments &amp; UPI, Digital banking, Loans &amp; recovery, Accounts &amp; deposits, Branch operations, Insurance &amp; investments, KYC &amp; records, Fraud cell), using the service, the issue, the amount and the wording, and rates its risk as low, medium or high. It also catches likely fraud the customer filed under the wrong category. <b>Escalation:</b> a rule-based matrix, informed by the AI risk rating, escalates cases automatically. A fraud case, or one the AI rates high risk, goes to the team lead straight away, and fraud of ₹1 lakh or more goes to the Principal Nodal Officer. A case with no action for 7 days goes to the team lead. A case at Day 20 without a resolution goes to the nodal officer. Day 25 goes to the Internal Ombudsman or GM. A customer's third complaint in 90 days goes to the Principal Nodal Officer. Levels never go down. Every routing and escalation is logged in the case history with the reason.</td><td>Complaints reach the right officer on day 1, not day 5. Breaches of the 30-day limit are prevented before they happen, and the escalation chain RBI expects is followed automatically and recorded.</td></tr>
+</table>
+<p class="small">Safeguards (as built): the chatbot never sees the customer's name, mobile or email, because the customer types those into the form; messages containing an OTP, PIN, CVV, card, Aadhaar or PAN number are blocked before they reach the model; the AI routes each complaint only once and staff can re-route; rule-based routing and fraud flags apply even if the AI is unavailable; each user is rate-limited; every AI decision is recorded in the audit trail. Later roadmap: a weekly AI insight brief for the board and AI-drafted replies for officers.</p>
+
+<!-- 2 -->
+<h2 class="pb">2. Market Context and Problem</h2>
+<h3>2.1 Why now</h3>
+<ul>
+  <li><b>Complaints keep rising.</b> RBI's Ombudsman annual reports show complaints to RBI Ombudsman offices rising every year, to about 9 lakh+ in FY2023-24. Digital payments, loans, cards and mobile banking are the biggest categories, and those are exactly the 12 services our form covers.</li>
+  <li><b>The 30-day rule is now visible to customers.</b> Under the <b>RBI Integrated Ombudsman Scheme (2021)</b>, customers can escalate if the bank doesn't reply within 30 days. Every complaint that reaches the Ombudsman is a visible failure, can lead to a compensation award, and goes into the bank's supervisory record.</li>
+  <li><b>RBI is watching smaller banks more closely.</b> Cooperative banks have come under tighter supervision. Supervisors expect a documented grievance process, a nodal officer and complaint disclosures.</li>
+  <li><b>Fraud and phishing.</b> Customers often put OTPs and card numbers into complaint emails, and fraudsters pose as bank staff. A complaints channel that <i>refuses</i> secrets protects the customer and the bank.</li>
+  <li><b>DPDP Act, 2023.</b> Data minimisation, purpose-limited consent and access logging are becoming legal requirements, and our prototype already has them.</li>
+</ul>
+<p class="small">Source: RBI, Annual Report of the Ombudsman Schemes 2023-24 (figures rounded).</p>
+
+<h3>2.2 The problem for a smaller bank</h3>
+<table>
+  <tr><th style="width:32%">Pain today</th><th>Consequence</th><th style="width:24%">How Grievance Desk fixes it</th></tr>
+  <tr><td>Complaints come in on paper registers at branches, a shared mailbox, phone calls and walk-ins</td><td>No single list. Cases get lost and nobody knows how many are open.</td><td>One online form and one shared queue</td></tr>
+  <tr><td>No running clock</td><td>Banks find out about breaches only after the customer escalates to RBI</td><td>A Day X of 30 meter on every case and a Past 30 days tile</td></tr>
+  <tr><td>Customers email OTPs, card numbers and Aadhaar copies</td><td>Data-protection risk and a target for fraudsters</td><td>Confidential-data guard, no uploads</td></tr>
+  <tr><td>“Where is my complaint?” calls</td><td>Branch and call-centre time wasted, angry customers</td><td>Self-service tracking with reference number and mobile</td></tr>
+  <tr><td>No audit trail at inspection time</td><td>Days spent rebuilding history from emails and registers</td><td>Timestamped history and access logs</td></tr>
+  <tr><td>Fraud complaints wait in the same queue as cheque-book requests</td><td>Customers lose the zero-liability window. Losses and anger grow.</td><td>Automatic urgent flag and block-first guidance</td></tr>
+</table>
+
+<h3>2.3 Market sizing (India, top-down estimate)</h3>
+<table>
+  <tr><th>Layer</th><th>Definition</th><th>Estimate</th></tr>
+  <tr><td>TAM</td><td>All RBI-regulated banks and lenders with a customer grievance function: commercial banks, SFBs, payments banks, RRBs, UCBs, state and district cooperative banks, NBFCs</td><td>~12,000 entities</td></tr>
+  <tr><td>SAM</td><td>Smaller banks with no enterprise CRM: ~1,450 UCBs, ~11 SFBs, ~28 RRBs (after the 2025 amalgamation), ~6 payments banks, plus ~350 state and district cooperative banks</td><td>~1,850 banks × average ₹3.5 lakh ACV ≈ <b>₹65 Cr/yr</b></td></tr>
+  <tr><td>SOM (3 years)</td><td>Reachable through federations and core-banking vendor partners</td><td>100 to 150 banks ≈ <b>₹4 to 5 Cr ARR</b></td></tr>
+</table>
+<p class="small">Bank counts are approximate and should be checked against current RBI data. NBFCs (~9,000) are an adjacent segment for Year 2.</p>
+
+<!-- 3 -->
+<h2 class="pb">3. Target Segment and Personas</h2>
+<h3>3.1 Segmentation and choice of beachhead</h3>
+<table>
+  <tr><th>Segment</th><th>Pain</th><th>Ability to pay</th><th>Sales cycle</th><th>Fit with prototype</th><th>Decision</th></tr>
+  <tr><td>Large public and private banks</td><td>High</td><td>High</td><td>12–18 months</td><td>Low (in-house CRM)</td><td>Not targeted</td></tr>
+  <tr><td><b>Urban cooperative banks (Tier 2–4)</b></td><td><b>Very high</b> (tight supervision, tiny IT teams, paper registers)</td><td>Low–medium</td><td>2–4 months, board approval</td><td><b>Very high</b> (lockers, cheques, deposits, branch service all covered)</td><td><b>Beachhead</b></td></tr>
+  <tr><td><b>Small finance banks and RRBs</b></td><td>High (fast-growing digital volume, rural customers)</td><td>Medium</td><td>3–6 months</td><td>High</td><td><b>Beachhead (second wave)</b></td></tr>
+  <tr><td>Payments banks, fintechs</td><td>High volume of UPI complaints</td><td>Medium–high</td><td>1–3 months</td><td>Medium (fewer services)</td><td>Opportunistic</td></tr>
+  <tr><td>NBFCs and digital lenders</td><td>High</td><td>Medium</td><td>2–4 months</td><td>Medium (loan-focused service list)</td><td>Year 2</td></tr>
+</table>
+<div class="box"><b>Target segment:</b> RBI-regulated <b>urban cooperative banks</b> with roughly 5 to 60 branches, then <b>small finance banks and RRBs</b>. These banks receive about 5 to 150 complaints a day, have 1 to 10 people handling complaints, rely on a core-banking vendor rather than an in-house IT team, and today track complaints on paper, email or Excel.</div>
+
+<h3>3.2 Primary persona: the champion and daily owner</h3>
+<div class="two">
+<div>
+<p><b>Rajesh Kulkarni, 46, Principal Nodal Officer and Head of Customer Service</b><br>
+A Tier-3 urban cooperative bank in Pune with 28 branches, 3.5 lakh customers, about 40 complaints a day and 4 people handling them.</p>
+<p><b>Background:</b> joined as a clerk 22 years ago and rose through branch operations. Comfortable with the core-banking system and Excel, cautious with new tech. Named as nodal officer on the bank's website, so RBI escalations land on his desk personally. Reports to the CEO and presents to the board's Customer Service Committee every quarter.</p>
+<p><b>A typical day:</b> collects complaint registers scanned by branches, reads the complaints mailbox, phones branch managers for updates, keeps a master Excel sheet, and once a month works late putting the board report together.</p>
+</div>
+<div>
+<p><b>Goals</b></p>
+<ul><li>No complaint goes past 30 days and nothing reaches the RBI Ombudsman</li><li>Pass the next RBI inspection without scrambling</li><li>Look modern and in control to the board</li><li>Protect customers from fraud and their own oversharing</li></ul>
+<p><b>Frustrations</b></p>
+<ul><li>“I only find out a complaint is late when RBI forwards it.”</li><li>“Customers email me their OTP and Aadhaar. That's a liability I don't want.”</li><li>“Our IT vendor quotes six months for anything new.”</li></ul>
+<p><b>Buying criteria:</b> simple enough for branch staff, data in India, nothing to install, cost a board will approve, recommended by peers or the federation.</p>
+</div>
+</div>
+<p><b>Where he gets information:</b> his state UCB federation and the national federation (NAFCUB), RBI circulars, WhatsApp groups of cooperative-bank officers, the Banking Frontiers and cooperative-sector press, his core-banking vendor's user meets, statutory and concurrent auditors, and annual sector conferences.</p>
+
+<h3>3.3 Buying committee</h3>
+<table>
+  <tr><th>Role</th><th>Cares about</th><th>What wins them</th></tr>
+  <tr><td>CEO / General Manager (economic buyer)</td><td>RBI standing, reputation, cost, board optics</td><td>Past-30-days tile at zero, Escalated tile and escalation log, peer references, low annual fee</td></tr>
+  <tr><td>Board Customer Service Committee</td><td>Oversight, fewer escalations</td><td>Quarterly trend report; automatic escalation log showing every case escalated before Day 30</td></tr>
+  <tr><td>Compliance officer / Internal auditor</td><td>Evidence, data protection, DPDP</td><td>Audit trail, contact-access log, confidential-data guard, consent capture</td></tr>
+  <tr><td>IT head / core-banking vendor</td><td>No integration work, security</td><td>Hosted, nothing to install, India region, row-level security, CSP, staff by invitation only</td></tr>
+  <tr><td>Complaints officers (daily users)</td><td>Simplicity, not being blamed</td><td>One queue, urgent and oldest first, history in one place</td></tr>
+  <tr><td>Bank customers (end users)</td><td>Being heard, safety, knowing the status</td><td>2-minute form, instant reference number, tracking, clear Ombudsman rights</td></tr>
+</table>
+
+<h3>3.4 Jobs-to-be-done</h3>
+<ul>
+  <li><b>Functional:</b> “Capture every complaint, resolve it within 30 days, and prove that we did.”</li>
+  <li><b>Risk:</b> “Stop customer secrets from coming into our systems, and catch fraud cases first.”</li>
+  <li><b>Emotional / social:</b> “Let me face the board and RBI inspectors with confidence, and let customers trust us.”</li>
+</ul>
+
+<!-- 4 -->
+<h2 class="pb">4. Value Proposition and Positioning</h2>
+<h3>4.1 Core value proposition</h3>
+<div class="box"><p class="quote">“Every complaint answered within 30 days. Customers' secrets never stored. Live in under two weeks.”</p>
+<p>Grievance Desk gives smaller banks a branded, secure complaints website and staff queue built around RBI's 30-day rule. Customers get a reference number at once and can track their complaint. Fraud cases go to the top of the queue, confidential details are blocked before they are stored, and every staff action is logged. An AI Complaint Assistant lets customers complain just by chatting, and AI routing sends every case to the right team and escalates it automatically well before Day 30.</p></div>
+
+<h3>4.2 Value proposition canvas</h3>
+<table>
+  <tr><th style="width:33%">Customer jobs</th><th style="width:33%">Pains</th><th>Gains wanted</th></tr>
+  <tr><td>Record every complaint; reply within 30 days; protect customer data; report to the board and RBI; spot fraud fast</td><td>Paper and email; breaches discovered late; OTP and Aadhaar arriving in inboxes; no audit trail; slow IT vendors; personal accountability</td><td>Zero Ombudsman escalations; a clean inspection; fewer follow-up calls; a modern image; quick launch at low cost</td></tr>
+  <tr><th>Products and services</th><th>Pain relievers</th><th>Gain creators</th></tr>
+  <tr><td>12-service guided form; reference number and tracking; staff queue with 30-day meter; fraud auto-flag; confidential-data guard; audit and access logs; <span class="tag">Built</span> AI Complaint Assistant (chatbot), AI routing and auto-escalation</td><td>One queue; Past 30 days alarm tile; secrets refused in the browser and the database; masked contacts; timestamped history; nothing to install</td><td>Customers check status themselves; Ombudsman rights shown openly (builds trust); every AI routing decision comes with a plain-language reason; branded for the bank</td></tr>
+</table>
+
+<h3>4.3 Competitive alternatives</h3>
+<table>
+  <tr><th>Alternative</th><th>Strengths</th><th>Gaps for our persona</th></tr>
+  <tr><td>Paper register + email + Excel (status quo)</td><td>Free, familiar</td><td>No clock, no tracking, no audit trail, secrets end up in inboxes</td></tr>
+  <tr><td>Complaint module from the core-banking vendor</td><td>Already a supplier</td><td>Usually an internal-only form, no customer tracking, few privacy controls, slow change requests</td></tr>
+  <tr><td>Generic helpdesk (e.g. Freshdesk, Zoho Desk)</td><td>Cheap, mature</td><td>Not built for banking: no 30-day RBI clock, no Ombudsman flow, accepts any attachment or text including OTPs and Aadhaar, needs configuration skills</td></tr>
+  <tr><td>Enterprise CX suites (e.g. Salesforce, Sprinklr)</td><td>Powerful</td><td>Priced and scoped for large banks, long implementation projects</td></tr>
+  <tr><td>RBI CMS portal</td><td>Free, official</td><td>It's where escalations end up, which is exactly what banks want to avoid. It doesn't replace the bank's own desk.</td></tr>
+</table>
+
+<h3>4.4 Positioning map</h3>
+<table>
+  <tr><th></th><th>Generic / low banking fit</th><th>Built for Indian banking compliance</th></tr>
+  <tr><td><b>Fast, affordable, nothing to install</b></td><td>Excel, email, generic helpdesks</td><td><b>Grievance Desk (open space we target)</b></td></tr>
+  <tr><td><b>Slow, expensive, IT-heavy</b></td><td>Horizontal CRM</td><td>Enterprise CX suites, core-banking add-ons</td></tr>
+</table>
+
+<h3>4.5 Positioning statement</h3>
+<div class="box"><b>For</b> nodal officers and CEOs of India's cooperative, small finance and regional rural banks<br>
+<b>who</b> must resolve every customer complaint within RBI's 30-day window without the budget or IT team of a large bank,<br>
+<b>Grievance Desk is</b> a secure, branded online complaints desk with an AI complaint chatbot and AI-powered routing and escalation<br>
+<b>that</b> lets customers lodge a complaint just by chatting, gives them a reference number and live tracking, routes every case to the right team, escalates it automatically before Day 30, flags fraud first and blocks confidential details before they are stored.<br>
+<b>Unlike</b> paper registers, generic helpdesks or core-banking add-ons,<br>
+<b>Grievance Desk</b> is built around RBI's grievance rules and Indian data-protection law, has nothing to install, and can go live in under two weeks.</div>
+
+<h3>4.6 Points of difference and reasons to believe</h3>
+<table>
+  <tr><th style="width:30%">Point of difference</th><th>Reason to believe (in the prototype today)</th></tr>
+  <tr><td>Built around RBI's 30-day rule</td><td>A Day X of 30 meter on every case, a Past 30 days alarm tile, the customer receipt timeline, and the Ombudsman route shown after Day 30</td></tr>
+  <tr><td>Safe by design</td><td>Confidential details blocked in the browser and again in the database; staff requests for secrets blocked; no uploads; only the last 4 digits of account and card numbers collected</td></tr>
+  <tr><td>Fraud first</td><td>Fraud issue types flagged urgent automatically and shown first; block-first and 3-day zero-liability guidance shown to the customer</td></tr>
+  <tr><td>Ready for audit</td><td>Timestamped event history per case; every reveal of a customer's contact details logged; staff accounts by invitation only, with 15-minute idle sign-out</td></tr>
+  <tr><td>Data stays in India and it's cheap to run</td><td>Mumbai-region database, static hosting, about ₹2–5k/month infrastructure per bank, so we can price for cooperative banks</td></tr>
+  <tr><td>Speed</td><td>A working, security-hardened prototype was built quickly with AI-assisted development. Launching a new bank means branding plus adding staff accounts.</td></tr>
+</table>
+<p class="small">Product gaps to close for launch (presented as roadmap, never claimed today): SMS and email notifications; MIS/CSV export; Hindi and regional-language forms; CAPTCHA; MFA for staff; a published retention policy.</p>
+
+<!-- 5 -->
+<h2 class="pb">5. Key Messaging and Communication Approach</h2>
+<h3>5.1 Message house</h3>
+<div class="box"><b>Umbrella message:</b> “The complaints desk your customers can trust and RBI can inspect.”</div>
+<table>
+  <tr><th style="width:33%">Pillar 1: Never miss Day 30</th><th style="width:33%">Pillar 2: Safe by design</th><th>Pillar 3: AI does the legwork</th></tr>
+  <tr><td>Every complaint gets a reference number and a visible 30-day clock. Fraud goes first. Nothing slips through.</td><td>OTPs, PINs, CVVs, card numbers, Aadhaar and PAN are refused before they are stored. Every look at customer data is logged.</td><td>Customers complain just by chatting. AI routes each case to the right officer and escalates it before Day 30. No case sits forgotten.</td></tr>
+  <tr><td><i>Proof:</i> 30-day meter, Past 30 days tile, urgent-first queue</td><td><i>Proof:</i> two-layer confidential-data guard, masked contacts, access log, India hosting</td><td><i>Proof:</i> <span class="tag">Built</span> the chatbot turns a few sentences into a filled-in complaint form; every routing and escalation is logged with its reason</td></tr>
+</table>
+
+<h3>5.2 Messages by persona</h3>
+<table>
+  <tr><th style="width:20%">Audience</th><th>Key message</th><th style="width:27%">Call to action</th></tr>
+  <tr><td>Nodal officer (Rajesh)</td><td>“Stop finding out about late complaints from RBI. See Day 30 coming, for every case, on one screen.”</td><td>Watch the 3-minute demo; book a live demo with your branch list</td></tr>
+  <tr><td>CEO / GM</td><td>“A modern, branded complaints desk for less than the cost of one clerk, live before your next board meeting.”</td><td>Ask for the 60-day pilot</td></tr>
+  <tr><td>Compliance / Auditor</td><td>“Every action is timestamped, every look at customer contact details is logged, and confidential details are blocked by the database itself.”</td><td>Download the RBI and DPDP readiness checklist</td></tr>
+  <tr><td>IT head / core-banking vendor</td><td>“Nothing to install or integrate. A link on your website, data in Mumbai, and access rules enforced in the database.”</td><td>Request the security note</td></tr>
+  <tr><td>Complaints officers</td><td>“One queue, urgent and oldest first, the full story of each case in one place. No more registers.”</td><td>Try the demo-mode sandbox</td></tr>
+  <tr><td>Bank customers (bank-led message)</td><td>“Raise a complaint in 2 minutes, get a reference number instantly, and track it any time. We will never ask for your PIN or OTP.”</td><td>“Lodge a complaint” button on the bank's website, passbook stickers, branch posters, SMS</td></tr>
+</table>
+
+<h3>5.3 Elevator pitch (30 seconds)</h3>
+<p>“RBI gives every bank 30 days to answer a complaint before the customer can go to the Ombudsman. Most cooperative and small banks still track complaints in paper registers and email, so they find out a case is late only when RBI forwards it, and their inboxes fill up with customers' OTPs and Aadhaar numbers. Grievance Desk gives them a branded online complaints desk. Customers get a reference number and live tracking, every case runs on a 30-day clock, fraud goes first, and confidential details are blocked before they are ever stored. Customers can simply chat with an AI assistant that fills in the form for them, and AI routes every case to the right team and escalates it before Day 30. It goes live in under two weeks, with nothing to install.”</p>
+
+<h3>5.4 Communication approach</h3>
+<ul>
+  <li><b>Tone:</b> calm, plain-language and trustworthy, like a senior compliance officer, not a tech startup. The product itself is written in simple English (“Tell us what went wrong”), and our marketing should sound the same.</li>
+  <li><b>Show it, don't describe it:</b> the strongest sales moment is typing an OTP into the form and watching it refuse. Build every demo, video and webinar around that moment and the 30-day meter.</li>
+  <li><b>Trust through peers:</b> cooperative bankers buy what other cooperative bankers use. Federation endorsement and pilot-bank testimonials are the most important assets.</li>
+  <li><b>Responsible AI:</b> “AI assists, a human decides.” The chatbot runs through the same confidential-data guard and never asks for an OTP or PIN. Officers can override any AI routing decision. Every routing and escalation is logged with its reason, and customers' contact details never go to the AI.</li>
+  <li><b>Vernacular:</b> customer-facing collateral (posters, SMS) in Hindi, Marathi, Gujarati, Tamil and other languages for each pilot bank's region.</li>
+</ul>
+
+<!-- 6 -->
+<h2 class="pb">6. Pricing and Business Model</h2>
+<h3>6.1 Business model</h3>
+<p><b>B2B white-label SaaS, annual subscription</b> paid by the bank, priced by <b>bank size (number of branches)</b> with a generous complaint allowance, plus a one-time setup fee. End customers never pay.</p>
+<p><b>Why price by branches:</b> cooperative-bank boards understand and budget by branch count. It is stable and predictable, which avoids the bank worrying that “more complaints means a bigger bill”. It also tracks value, since more branches mean more complaints and more regulatory exposure. Per-user pricing would discourage banks from giving every officer and branch manager access.</p>
+
+<h3>6.2 Pricing rationale</h3>
+<ul>
+  <li><b>Value created:</b> one complaints clerk costs a UCB about ₹4–5 lakh a year. Grievance Desk removes manual register and Excel work, cuts “where is my complaint” calls, and helps avoid Ombudsman escalations, compensation awards and adverse inspection findings. We estimate ₹6–10 lakh a year of value for a 25-branch bank.</li>
+  <li><b>What customers pay elsewhere:</b> generic helpdesks cost ₹1–3 lakh a year but need configuration and lack banking controls. Core-banking change requests and enterprise suites cost ₹10 lakh+.</li>
+  <li><b>Cost to serve:</b> static hosting and hosted Postgres cost roughly ₹2–5k a month per bank, plus AI API costs of under ₹1 per complaint. That allows <b>about 80% gross margin</b> at prices cooperative banks can approve.</li>
+  <li><b>Price point:</b> capture about 30–40% of the value, for an ROI of 3x or more and a price below the cost of one clerk.</li>
+</ul>
+
+<h3>6.3 Pricing tiers (indicative, ex-GST)</h3>
+<table>
+  <tr><th>Tier</th><th>Essential</th><th>Professional (target tier)</th><th>Enterprise</th></tr>
+  <tr><td>Best for</td><td>Small UCBs, up to 10 branches</td><td>UCBs and RRBs with 11–60 branches</td><td>SFBs, larger UCBs, multi-state banks</td></tr>
+  <tr><td>Price</td><td><b>₹12,000 / month</b><br>(₹1.44 lakh / yr)</td><td><b>₹30,000 / month</b><br>(₹3.6 lakh / yr)</td><td><b>From ₹9 lakh / yr</b></td></tr>
+  <tr><td>Complaints included</td><td>1,000 / month</td><td>5,000 / month</td><td>Unlimited</td></tr>
+  <tr><td>Staff accounts</td><td>5</td><td>25</td><td>Unlimited</td></tr>
+  <tr><td>Included today</td><td colspan="3">Branded complaints website, reference numbers and tracking, 12-service form, staff queue with 30-day clock, fraud auto-flag, confidential-data guard, audit and access logs, India hosting</td></tr>
+  <tr><td>Tier extras</td><td>Email support</td><td>+ AI Complaint Assistant (chatbot), AI routing and auto-escalation, SMS/email notifications, MIS export</td><td>+ Custom escalation matrix (Internal Ombudsman, GM), board-report pack, weekly AI insight brief, custom domain, SSO and MFA, regional languages, dedicated success manager</td></tr>
+</table>
+<p><b>Other revenue:</b> setup fee of ₹25,000 (Essential) to ₹1.5 lakh (Enterprise) covering branding, staff onboarding, branch-staff training and customer-launch collateral. Add-ons such as WhatsApp intake, extra languages or an IVR callback at ₹3,000–8,000 a month each.</p>
+<p><b>Launch offers:</b> (1) <b>60-day free pilot</b> for the first 5 banks in exchange for a testimonial and reference calls; (2) <b>Founding-bank price</b>, 25% off year 1 for contracts signed by 31 March 2027; (3) <b>Federation member rate</b>, 10% off for members of partner UCB federations.</p>
+
+<h3>6.4 Unit economics (Year 1 targets)</h3>
+<table>
+  <tr><th>Metric</th><th>Target</th><th>Rationale</th></tr>
+  <tr><td>Average contract value (ACV)</td><td>₹3–4 lakh</td><td>Mostly Professional tier</td></tr>
+  <tr><td>Gross margin</td><td>~80%</td><td>Very low hosting cost; AI cost under ₹1 per complaint</td></tr>
+  <tr><td>CAC</td><td>≤ ₹1.2 lakh</td><td>Federation and vendor channels, founder-led sales</td></tr>
+  <tr><td>CAC payback</td><td>≤ 6 months</td><td>Annual billing in advance</td></tr>
+  <tr><td>Logo churn</td><td>&lt; 8% / yr</td><td>Becomes part of the bank's grievance policy and customer communications</td></tr>
+  <tr><td>LTV : CAC</td><td>≥ 6 : 1</td><td>Low churn and tier upgrades</td></tr>
+</table>
+
+<!-- 7 -->
+<h2 class="pb">7. Go-to-Market Plan</h2>
+<h3>7.1 GTM motion</h3>
+<p><b>Partner-assisted, account-based, founder-led sales.</b> Cooperative banks rely on trusted intermediaries such as federations, core-banking vendors and auditors, so these are our main routes in. A free pilot removes the risk of buying, and pilot banks become the references that persuade the next ones.</p>
+
+<h3>7.2 Channel plan</h3>
+<table>
+  <tr><th style="width:19%">Channel</th><th>Key activities</th><th style="width:15%">Purpose</th><th style="width:17%">KPI (to Mar 2027)</th></tr>
+  <tr><td><b>UCB federations</b> (primary)</td><td>Approach state federations (start with Maharashtra and Gujarat, which have the most UCBs) and the national federation (NAFCUB). Offer a member rate and a free “30-day rule and DPDP” workshop for member banks.</td><td>Trust, reach</td><td>2 federation partnerships; 4 workshops</td></tr>
+  <tr><td><b>Core-banking and IT vendor partners</b></td><td>Referral and reseller deals with the software vendors that serve cooperative banks. Grievance Desk is a no-integration add-on they can offer. 20% revenue share.</td><td>Distribution</td><td>3 partners; 25% of pipeline</td></tr>
+  <tr><td><b>Auditors and compliance consultants</b></td><td>Concurrent and statutory audit firms that flag weak grievance processes. Referral fee of 15% of year-1 ACV.</td><td>Warm referrals</td><td>5 active referrers</td></tr>
+  <tr><td><b>Account-based outreach</b></td><td>List of 200 target banks from RBI lists, with nodal officers' names taken from each bank's website (they're required to publish them). Personalised email, LinkedIn and phone outreach, with a 3-minute demo video showing the OTP refusal and the 30-day meter.</td><td>Pipeline</td><td>40 demos</td></tr>
+  <tr><td><b>Content and lead magnets</b></td><td>(1) “RBI 30-Day Rule and DPDP Readiness Checklist for Cooperative Banks”; (2) “What Customers Complain About: Insights from RBI Ombudsman Data”; (3) a free self-assessment: “Would your complaints desk pass an inspection?”</td><td>Lead generation</td><td>250 downloads; 60 qualified leads</td></tr>
+  <tr><td><b>Webinars and workshops</b></td><td>Monthly session with a guest (retired RBI or cooperative-bank official, or a DPDP lawyer), plus a live demo. Run in English and Marathi or Hindi.</td><td>Education</td><td>80 attendees per session</td></tr>
+  <tr><td><b>Events</b></td><td>Booth or speaking slot at cooperative-banking conferences and federation AGMs, and Global Fintech Fest for SFBs and payments banks. Closed-door breakfasts for nodal officers in Pune, Ahmedabad and Bengaluru.</td><td>Relationships</td><td>30 qualified conversations per event</td></tr>
+  <tr><td><b>LinkedIn and WhatsApp</b></td><td>Founder posts twice a week (“complaint of the week” teardowns, RBI rule explainers). Shareable 60-second demo clips designed to be forwarded in bankers' WhatsApp groups.</td><td>Awareness</td><td>150k impressions</td></tr>
+  <tr><td><b>PR and website</b></td><td>Launch story and pilot case study in banking and fintech media. Website with a demo-mode sandbox (already built), segment pages, pricing and security page. SEO for searches such as “complaint management system for cooperative bank” and “RBI 30 day complaint rule”.</td><td>Credibility, inbound</td><td>4 media mentions; 1,500 visits/month</td></tr>
+  <tr><td><b>Bank-to-customer launch kit</b> (for each customer bank)</td><td>Branch posters with QR codes, passbook inserts, SMS template, website banner and a “we never ask for your OTP” message, so the bank's own customers actually use the desk.</td><td>Adoption</td><td>≥ 60% of a pilot bank's complaints coming in online</td></tr>
+</table>
+
+<h3>7.3 Sales process</h3>
+<table>
+  <tr><th>Stage</th><th>Activity</th><th>Exit criteria</th></tr>
+  <tr><td>1. Discovery (30 min)</td><td>Ask about current complaint channels, monthly volumes, recent RBI escalations, inspection findings and who signs off.</td><td>Pain confirmed; CEO's interest</td></tr>
+  <tr><td>2. Demo with the bank's own brand</td><td>A demo-mode instance branded with the bank's name and branches. Live OTP-refusal and fraud-flag moments.</td><td>Nodal officer wants a pilot</td></tr>
+  <tr><td>3. Security and compliance pack</td><td>Security note (row-level security, CSP, India region, access logs), data processing agreement, DPDP mapping.</td><td>IT and compliance sign-off</td></tr>
+  <tr><td>4. 60-day pilot</td><td>3 to 5 branches plus the head office desk. Success criteria agreed upfront (zero cases past 30 days, share of complaints lodged online, officer time saved).</td><td>Criteria met</td></tr>
+  <tr><td>5. Board approval and contract</td><td>ROI one-pager and board note template written for the bank's board.</td><td>Board resolution, signed order</td></tr>
+  <tr><td>6. Roll out and expand</td><td>All branches go live with the customer launch kit. Quarterly review of routing accuracy and the escalation log.</td><td>All branches live in under 30 days; NPS ≥ 40</td></tr>
+</table>
+
+<h3>7.4 Launch sequence</h3>
+<table>
+  <tr><th>Phase</th><th>Dates</th><th>Goal</th><th>Key activities</th></tr>
+  <tr><td><b>0. Validate</b></td><td>15 Oct to 8 Nov 2026</td><td>Confirm persona, value and price</td><td>15 to 20 interviews with nodal officers and CEOs at UCBs, SFBs and RRBs; demo the live prototype; pricing survey; first conversations with federations</td></tr>
+  <tr><td><b>1. Pilot build and design partners</b></td><td>9 Nov to 20 Dec 2026</td><td>Launch-ready product, 3 pilot banks</td><td>Tune the AI Complaint Assistant and AI routing on pilot data; build SMS/email notifications, MIS export, CAPTCHA and staff MFA; sign 3 pilot banks; set up branded instances</td></tr>
+  <tr><td><b>2. Pilots and pre-launch</b></td><td>21 Dec 2026 to 15 Jan 2027</td><td>Proof and assets</td><td>Pilots live with the customer launch kit; collect metrics; build website, demo video, checklist, sales deck, ROI one-pager and security pack; sign federation and vendor partners</td></tr>
+  <tr><td><b>3. Public launch</b></td><td>Week of 18 Jan 2027</td><td>Awareness and pipeline</td><td>Launch webinar co-hosted with a federation and a pilot-bank speaker; press release; founder launch post; ABM blitz to 200 banks; founding-bank offer opens</td></tr>
+  <tr><td><b>4. Convert and scale</b></td><td>Feb to Mar 2027</td><td>First revenue</td><td>Convert pilots to paid; federation workshops; first conference; 2 case studies; review the funnel and refine pricing and target segment</td></tr>
+</table>
+
+<!-- 8 -->
+<h2 class="pb">8. Execution Plan: Timeline, Milestones and Owners</h2>
+<p class="small">Owners are listed by role. Assign team members to roles: <b>PM</b> = Product Manager / team lead, <b>PMM</b> = Product Marketing Manager, <b>GTM</b> = Sales and Partnerships lead, <b>TECH</b> = Engineering lead (prototype codebase), <b>CX</b> = Customer Success and Compliance lead.</p>
+
+<h3>8.1 Week-by-week plan (15 Oct 2026 to 31 Mar 2027)</h3>
+<table>
+  <tr><th style="width:15%">Week / dates</th><th>Activities</th><th style="width:12%">Owner</th><th style="width:23%">Milestone</th></tr>
+  <tr><td>W1 · 15 to 18 Oct</td><td>Submit strategy; assign roles; build a list of 200 target banks; interview guide; load test complaints and share the live demo link</td><td>PM, GTM, TECH</td><td>Target list v1; demo link shared</td></tr>
+  <tr><td>W2–3 · 19 Oct to 1 Nov</td><td>15 to 20 interviews with nodal officers and CEOs; prototype demos; pricing survey; first federation meetings</td><td>PM, CX, GTM</td><td>Interview synthesis; persona v2</td></tr>
+  <tr><td>W4 · 2 to 8 Nov</td><td>Finalise positioning, messaging and pricing; spec the pilot additions (SMS/email notifications, MIS export, CAPTCHA, staff MFA, Hindi and Marathi chat, per-bank escalation matrix)</td><td>PMM, PM</td><td><b>M1: Messaging, pricing and pilot spec locked</b></td></tr>
+  <tr><td>W5–6 · 9 to 22 Nov</td><td>Add Hindi and Marathi to the AI Complaint Assistant; build notifications; sign 3 pilot banks (MoU, NDA, data processing agreement); draft security and DPDP pack</td><td>TECH, GTM, CX</td><td><b>M2: 3 pilot banks signed</b></td></tr>
+  <tr><td>W7–8 · 23 Nov to 6 Dec</td><td>Configure each bank's routing teams and escalation matrix; build MIS export; set up branded instances; train pilot staff; print customer launch kits</td><td>TECH, CX, PMM</td><td>Pilot instances ready</td></tr>
+  <tr><td>W9–10 · 7 to 20 Dec</td><td>Pilots go live; record baseline (complaints past 30 days, channels used); weekly check-ins; fix issues</td><td>CX, TECH, PM</td><td><b>M3: Pilots live</b></td></tr>
+  <tr><td>W11–12 · 21 Dec to 3 Jan</td><td>Website with sandbox; 3-minute demo video; checklist; sales deck; ROI one-pager; sign vendor and auditor partners</td><td>PMM, GTM</td><td>Launch assets v1; 2 partners signed</td></tr>
+  <tr><td>W13–14 · 4 to 17 Jan</td><td>Mid-pilot review; capture testimonials; teaser campaign; webinar registrations; press kit; go/no-go review</td><td>PM, PMM, CX</td><td><b>M4: Launch readiness (go/no-go)</b></td></tr>
+  <tr><td>W15 · 18 to 24 Jan</td><td><b>PUBLIC LAUNCH:</b> federation co-hosted webinar, press release, founder post, ABM blitz to 200 banks, founding-bank offer</td><td>All</td><td><b>M5: Launch</b> (150+ registrants; 20 demo requests)</td></tr>
+  <tr><td>W16–19 · 25 Jan to 21 Feb</td><td>Pilots end (60 days); convert to paid; 20+ demos; case study #1; first federation workshop</td><td>GTM, CX, PMM</td><td><b>M6: First paying bank</b></td></tr>
+  <tr><td>W20–24 · 22 Feb to 31 Mar</td><td>Conference or roundtable; case study #2; partner-sourced deals; funnel review; refine pricing and target segment; plan next quarter</td><td>All</td><td><b>M7: 2+ paying banks, ₹6 lakh+ contracted ARR, 20-bank pipeline</b></td></tr>
+</table>
+
+<h3>8.2 Timeline view</h3>
+<table>
+  <tr><th style="width:26%">Workstream</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th></tr>
+  <tr><td>Customer discovery</td><td>■■■</td><td>■</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>Positioning, messaging, pricing</td><td>■</td><td>■■</td><td></td><td></td><td>■ refine</td><td>■ refine</td></tr>
+  <tr><td>Pilot build (notifications, MIS export, AI tuning)</td><td></td><td>■■■</td><td>■■</td><td></td><td></td><td></td></tr>
+  <tr><td>Pilot banks</td><td></td><td>sign</td><td>■■■</td><td>■■■</td><td>convert</td><td></td></tr>
+  <tr><td>Partners (federations, vendors, auditors)</td><td>■</td><td>■■</td><td>■■</td><td>■■</td><td>■■</td><td>■■</td></tr>
+  <tr><td>Content and launch assets</td><td></td><td>■</td><td>■■■</td><td>■■</td><td>■</td><td>■</td></tr>
+  <tr><td>Public launch</td><td></td><td></td><td></td><td>★ 18 Jan</td><td></td><td></td></tr>
+  <tr><td>Sales and ABM</td><td>■</td><td>■■</td><td>■</td><td>■■■</td><td>■■■</td><td>■■■</td></tr>
+</table>
+
+<h3>8.3 RACI for key deliverables</h3>
+<table>
+  <tr><th>Deliverable</th><th>PM</th><th>PMM</th><th>GTM</th><th>TECH</th><th>CX</th></tr>
+  <tr><td>Persona and messaging</td><td>A</td><td>R</td><td>C</td><td>I</td><td>C</td></tr>
+  <tr><td>Pricing and packaging</td><td>A/R</td><td>C</td><td>C</td><td>C</td><td>I</td></tr>
+  <tr><td>Pilot build (notifications, MIS export, MFA, AI tuning)</td><td>A</td><td>I</td><td>I</td><td>R</td><td>C</td></tr>
+  <tr><td>Pilot banks and onboarding</td><td>C</td><td>I</td><td>A</td><td>C</td><td>R</td></tr>
+  <tr><td>Security, DPDP and RBI compliance pack</td><td>A</td><td>I</td><td>C</td><td>R</td><td>R</td></tr>
+  <tr><td>Website, content and launch campaign</td><td>C</td><td>A/R</td><td>C</td><td>C</td><td>I</td></tr>
+  <tr><td>Federation and vendor partnerships</td><td>C</td><td>C</td><td>A/R</td><td>I</td><td>I</td></tr>
+</table>
+<p class="small">R = Responsible, A = Accountable, C = Consulted, I = Informed</p>
+
+<!-- 9 -->
+<h2 class="pb">9. Success Metrics, Budget and Risks</h2>
+<h3>9.1 KPIs (to 31 March 2027)</h3>
+<table>
+  <tr><th>Stage</th><th>Metric</th><th>Target</th></tr>
+  <tr><td>Awareness</td><td>LinkedIn impressions; website visits; webinar and workshop attendees</td><td>150k; 4,000; 300</td></tr>
+  <tr><td>Acquisition</td><td>Qualified leads; demos held</td><td>60; 40</td></tr>
+  <tr><td>Activation</td><td>Pilots started; pilot-to-paid conversion</td><td>5; ≥ 50%</td></tr>
+  <tr><td>Revenue</td><td>Paying banks; contracted ARR</td><td>2+; ₹6 lakh+</td></tr>
+  <tr><td>Product value (pilot banks)</td><td>Open complaints past 30 days; share lodged online; “where is my complaint” calls; confidential details blocked</td><td>0; ≥ 60%; −40%; 100% (tracked per bank)</td></tr>
+  <tr><td>Adoption and advocacy</td><td>Weekly active officers; customer satisfaction after resolution; NPS of bank staff; referenceable banks</td><td>≥ 80%; ≥ 4/5; ≥ 40; 2</td></tr>
+</table>
+
+<h3>9.2 Indicative launch budget (Oct 2026 to Mar 2027)</h3>
+<table>
+  <tr><th>Item</th><th>Amount (₹)</th></tr>
+  <tr><td>Events, federation workshops and travel</td><td>2,50,000</td></tr>
+  <tr><td>LinkedIn ads and ABM</td><td>1,50,000</td></tr>
+  <tr><td>Content: demo video, website, checklist and report design</td><td>1,25,000</td></tr>
+  <tr><td>Customer launch kits for pilot banks (posters, inserts, translations)</td><td>60,000</td></tr>
+  <tr><td>Infrastructure and tools (hosting, AI API, SMS, CRM, webinar platform)</td><td>75,000</td></tr>
+  <tr><td>Legal review (DPDP, data processing agreement, privacy notice)</td><td>75,000</td></tr>
+  <tr><td>Contingency (10%)</td><td>73,500</td></tr>
+  <tr><td><b>Total</b></td><td><b>8,08,500</b></td></tr>
+</table>
+
+<h3>9.3 Key risks and mitigation</h3>
+<table>
+  <tr><th style="width:30%">Risk</th><th style="width:10%">Impact</th><th>Mitigation</th></tr>
+  <tr><td>Cooperative banks are conservative and slow, and need board approval</td><td>High</td><td>Federation endorsement; free pilot; board-note template; peer references</td></tr>
+  <tr><td>Vendor-risk and IT outsourcing reviews</td><td>High</td><td>Security pack prepared in advance; India hosting; row-level security; data processing agreement; plan for a third-party security audit</td></tr>
+  <tr><td>Customers keep using branches and phone</td><td>Medium</td><td>Customer launch kit with QR codes; branch staff lodge complaints for walk-in customers on the same form, so every complaint is recorded</td></tr>
+  <tr><td>AI routes a case wrongly or the chatbot misunderstands a customer</td><td>Medium</td><td>Officers can re-route with one click (corrections improve the model); rule-based fraud flags and the 30-day escalation rules still apply even if the AI fails; the chatbot shows a summary for the customer to confirm, and the classic form is always available</td></tr>
+  <tr><td>Core-banking vendors build their own version</td><td>Medium</td><td>Partner with them instead (revenue share); keep a lead on privacy controls and the customer-facing experience</td></tr>
+  <tr><td>DPDP and RBI rules change</td><td>Low–medium</td><td>Compliance lead monitors circulars; rules live in the database layer so changes can be made quickly</td></tr>
+</table>
+
+<h3>9.4 Beyond launch</h3>
+<ul>
+  <li>Product: AI-drafted replies (passed through the confidential-data guard), a weekly AI insight brief for the board, regional-language forms, WhatsApp intake, predictive scoring of cases likely to breach the 30-day deadline, RBI-format disclosure reports.</li>
+  <li>Markets: NBFCs and digital lenders (Year 2), insurance (IRDAI's Bima Bharosa flow) and brokers (SEBI SCORES), then other markets with regulator-led grievance rules.</li>
+</ul>
+
+
+<!-- Appendix -->
+<h2 class="pb">Appendix A. Prototype Walkthrough</h2>
+<p>Screenshots of the working prototype, live at <b>https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/</b>. Complaint data is sample data. The chat conversation and staff views were captured in the prototype's demo mode, which runs the same screens without the live database.</p>
+<figure><img src="strategy_assets/1-lodge.jpg" alt=""><figcaption>A1. Lodge tab: the AI assistant entry point above the guided 12-service form, with the “what happens next” timeline and the “we will never ask for” promise.</figcaption></figure>
+<figure><img src="strategy_assets/2-chat.jpg" alt=""><figcaption>A2. AI Complaint Assistant: the customer describes the problem in their own words and the assistant asks only what's missing.</figcaption></figure>
+<figure><img src="strategy_assets/3-draft.jpg" alt=""><figcaption>A3. The assistant's draft: service, issue and a clear description, ready to fill in the form with one click. The customer still adds their own contact details and submits.</figcaption></figure>
+<figure><img src="strategy_assets/4-otp-block.png" alt=""><figcaption>A4. Safe by design: an OTP typed into the description is flagged and the complaint can't be sent until it's removed. The same check runs again in the database. The fraud issue also shows block-first guidance.</figcaption></figure>
+<figure><img src="strategy_assets/5-receipt.jpg" alt=""><figcaption>A5. Instant reference number and the reply-by date (Day 30).</figcaption></figure>
+<figure><img src="strategy_assets/6-queue.jpg" alt=""><figcaption>A6. Staff queue: Escalated tile, team and escalation level on every case, 30-day clock, urgent and escalated cases first.</figcaption></figure>
+<figure><img src="strategy_assets/7-routing-detail.png" alt=""><figcaption>A7. Case detail: a complaint filed as a login problem, re-routed by AI to the Fraud cell (risk: high) with its reason, escalated to the team lead, with the full routing history and a one-click re-route.</figcaption></figure>
+<h3>Try it</h3>
+<table>
+  <tr><th style="width:26%">What to try</th><th>How</th></tr>
+  <tr><td>Lodge with the AI assistant</td><td>Lodge tab → “Describe it in a chat”. Try typing an OTP to see it blocked.</td></tr>
+  <tr><td>Lodge with the form</td><td>Pick a service and issue, describe the problem, add name and mobile, submit.</td></tr>
+  <tr><td>Track a complaint</td><td>Track tab → reference number and the mobile number used when lodging.</td></tr>
+  <tr><td>Staff queue, routing and escalation</td><td>Staff tab → sign in with a staff account (available from the team on request). 12 test complaints show every routing and escalation rule.</td></tr>
+</table>
+
+<p class="small" style="margin-top:18px">Prepared by Group 5 for Mini Project 3, Product Management with AI, IIM Calcutta. Market figures are indicative planning estimates and should be checked against current RBI publications.</p>
+
+</body>
+</html>

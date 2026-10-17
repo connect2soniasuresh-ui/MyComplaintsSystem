@@ -1,6 +1,6 @@
 # Sangam Bank Grievance Desk
 
-A complaints website for every banking service. Customers lodge a complaint, get a reference number and track it. Complaints officers work through a shared queue with a 30-day clock, following the RBI rule that a bank must reply within 30 days before a customer can go to the RBI Ombudsman.
+A complaints website for every banking service. Customers lodge a complaint, get a reference number and track it. Complaints officers work through a shared queue with a **24-hour resolution target** on every case. RBI's rule, that a bank must give its final reply within 30 days before a customer can go to the RBI Ombudsman, stays as the outer deadline.
 
 The site is static (GitHub Pages) and stores data in [Supabase](https://supabase.com) (hosted Postgres).
 
@@ -15,7 +15,13 @@ The site is static (GitHub Pages) and stores data in [Supabase](https://supabase
 | `supabase/seed_test_complaints.sql` | Optional test complaints for demos |
 | `claude-artifact/grievance-desk.html` | The original version that runs inside claude.ai |
 
-With `config.js` left empty the site runs in **demo mode**: it works, but complaints live only in the browser tab.
+With `config.js` left empty the site runs in **demo mode**: it works, but complaints live only in the browser tab. Demo mode starts with 9 sample complaints, and any email and password opens the Staff tab.
+
+**Reviewers:** add `?demo` to the live address (https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/?demo) to try every screen, including the staff console, without an account. Nothing you enter there is saved.
+
+## Monthly report
+
+In the Staff tab, **Monthly report** summarises any month: complaints received and resolved, the share resolved within 24 hours and within 30 days, average time to resolve, open cases and cases past 24 hours and past 30 days, broken down by service and by team. **Download CSV** exports that month's complaints with contact details masked, for the board's Customer Service Committee or RBI returns. **Print or save as PDF** prints only the report. It's built in the browser from the staff queue, so it needs no database changes.
 
 ## Set up the database (about 10 minutes)
 
@@ -42,9 +48,11 @@ Two features run in the `ai` Edge Function (`supabase/functions/ai/index.ts`), w
 
   | Rule | Escalated to |
   |---|---|
-  | Fraud complaint, or AI rates it high risk, or no action for 7 days | Team lead |
-  | Day 20 without a final reply, fraud of ₹1 lakh or more, or third complaint from the same customer in 90 days | Principal Nodal Officer |
-  | Day 25 without a final reply | Internal Ombudsman / GM |
+  | Fraud complaint, or AI rates it high risk, or no action for 4 hours | Team lead |
+  | Open 12 hours without a final reply, fraud of ₹1 lakh or more, or third complaint from the same customer in 90 days | Principal Nodal Officer |
+  | Open 20 hours without a final reply | Internal Ombudsman / GM |
+
+  The time rules follow the 24-hour target, so a case reaches the GM before the target is missed. Staff see each case's clock (“5h of 24h”, then “Past 24h · Day 3 of 30”) and a **Past 24-hour target** tile next to **Past 30 days**.
 
   Every routing decision and escalation is logged in the case history with the reason. Staff can re-route a case from its detail view. Customers don't see these internal entries.
 
@@ -53,7 +61,7 @@ Setup:
 1. Get an API key at console.anthropic.com.
 2. In Supabase open **Edge Functions → Secrets** and add `ANTHROPIC_API_KEY` with your key. Optionally add `ALLOWED_ORIGIN` set to your site's address (for example `https://youraccount.github.io`), so only your site can call the function.
 3. Open **Edge Functions → Deploy a new function → Via editor**. Name it `ai`, delete the sample code in the editor, paste all of `supabase/functions/ai/index.ts`, and click **Deploy**. If you use a different name, put it in `aiFunction` in `config.js`. (With the Supabase CLI: `supabase functions deploy ai`.)
-4. Escalations run every 30 minutes through `pg_cron`, which `schema.sql` enables. If your project doesn't allow it, escalations still run whenever staff open the queue.
+4. Escalations run every 10 minutes through `pg_cron`, which `schema.sql` enables. If your project doesn't allow it, escalations still run whenever staff open the queue.
 
 If the function isn't deployed, the site still works: the chat option tells customers to use the form, and complaints stay on rule-based routing.
 
