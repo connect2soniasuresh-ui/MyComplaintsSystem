@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simulated Interviews</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  h2::after { content:"AI-simulated, not primary research"; display:block; font-size:8pt; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#8a3b0a; margin-top:2px; }
+  .sim-flag { text-align:center; font-size:8pt; font-weight:700; letter-spacing:1px; color:#8a3b0a; background:#fde9d9; padding:3px 0; }
+  .qa { margin:4px 0 10px; }
+  .qa p { margin:3px 0; }
+  .qa .q { font-weight:600; color:#0e3b5c; }
+  .qa .a { padding-left:12px; border-left:3px solid #e2d9cb; }
+  .resp { background:#f7f1e3; padding:6px 10px; font-size:9.5pt; margin:4px 0 8px; }
+</style>
+</head>
+<body>
+<div class="sim-flag">AI-SIMULATED INTERVIEWS · NOT PRIMARY RESEARCH · FOR REHEARSAL AND HYPOTHESIS STRESS-TESTING ONLY</div>
+
+<div class="cover">
+  <h1>Grievance Desk</h1>
+  <div class="sub">Simulated stakeholder interviews<br><b>A rehearsal for our real nodal-officer interviews</b></div>
+  <table class="meta">
+    <tr><td>Course</td><td>Product Management with AI, IIM Calcutta (Prof. Saravana Jaikumar)</td></tr>
+    <tr><td>Group</td><td>Group 5: Sonia, Chetana, Abhay, Gayatri, Padma Priya, Amir, Urmila</td></tr>
+    <tr><td>Status</td><td>Supporting artefact (optional under the brief). Not part of the evidence base.</td></tr>
+    <tr><td>Date</td><td>October 2026</td></tr>
+  </table>
+  <div class="note"><b>Read this first.</b> These seven interviews were <b>simulated with an AI model (Claude) role-playing the stakeholders</b> in our segment analysis. No real banker or customer was interviewed. Respondents are fictional, and no real bank is named or implied. Each simulated answer was steered by public facts (the RBI 30-day rule, the Ombudsman data, UCB tiers, the RRB merger, the fraud mix) and by the objections we expect. We use this document for three things only:
+  <ol>
+    <li><b>Rehearsal:</b> practising the interview guide before the real calls.</li>
+    <li><b>Stress-testing:</b> finding which of our hypotheses could be wrong, and how.</li>
+    <li><b>Preparation:</b> anticipating objections and adding sharper questions to the real guide.</li>
+  </ol>
+  Nothing here confirms a hypothesis. The persona quotes in our Consumer and Segment Analysis remain labelled illustrative until real interviews replace them.</div>
+
+  <h3>Contents</h3>
+  <ol>
+    <li>Method</li>
+    <li>S1 · Principal Nodal Officer, Tier 3 urban cooperative bank</li>
+    <li>S2 · CEO, Tier 2 urban cooperative bank</li>
+    <li>S3 · Head of Customer Service, small finance bank</li>
+    <li>S4 · General Manager, regional rural bank</li>
+    <li>S5 · Complaints officer, Tier 2 urban cooperative bank</li>
+    <li>S6 · Customer, fraud victim</li>
+    <li>S7 · Customer, senior citizen and pensioner</li>
+    <li>What the simulation suggests, hypothesis by hypothesis</li>
+    <li>Changes to the real interview guide</li>
+    <li>Product ideas to test, not to build yet</li>
+  </ol>
+</div>
+
+<h2>1. Method</h2>
+<table>
+  <tr><th style="width:24%">Step</th><th>What we did</th></tr>
+  <tr><td>Respondent briefs</td><td>For each respondent we wrote a short brief: role, bank type and size, region, tenure, and attitude to technology. Briefs were drawn from the segments and personas in our Consumer and Segment Analysis. At least two respondents were briefed to be sceptical.</td></tr>
+  <tr><td>Interview</td><td>A team member asked the questions from our 11-question guide (section 11.2 of the analysis), with follow-ups. The AI answered in character, and was told to push back where a real officer plausibly would and not to agree just to please us.</td></tr>
+  <tr><td>Demo</td><td>For the demo questions, the respondent was shown the screens we built: the OTP refusal, the 24-hour clock, escalation and the monthly report.</td></tr>
+  <tr><td>Synthesis</td><td>Answers were coded against our seven hypotheses. Every finding is graded “signal to test”, never “confirmed”.</td></tr>
+  <tr><td>Limits</td><td>A model can only echo patterns from public material and from our own framing, so it is biased towards what we already believe. Real interviews may contradict all of this, and that is the point of running them.</td></tr>
+</table>
+
+<!-- S1 -->
+<h2 class="pb">2. S1 · Principal Nodal Officer, Tier 3 UCB (simulated)</h2>
+<div class="resp"><b>Brief:</b> 51, Principal Nodal Officer and Head of Operations at a 34-branch urban cooperative bank in western Maharashtra. 26 years at the bank. Uses Excel daily. Mildly sceptical of start-ups.</div>
+<div class="qa"><p class="q">Walk me through the last complaint you handled.</p>
+<p class="a">“A customer’s ATM withdrawal failed at another bank’s machine, but the money was debited. He went to the branch, the branch wrote it in the register, and someone emailed my team three days later. We raised it with the switch and it reversed on its own on day 6. But the customer had called the branch four times by then.”</p></div>
+<div class="qa"><p class="q">How do you know which complaints are close to 30 days?</p>
+<p class="a">“Our Excel sheet has a date column. Every Friday my assistant sorts it. If a branch never sent the complaint to us, it isn’t in the sheet at all. That’s the real problem: the ones I don’t know about.”</p></div>
+<div class="qa"><p class="q">Has anyone ever sent you an OTP, card number or Aadhaar copy?</p>
+<p class="a">“Every week. People attach a photo of their card, front and back. We delete it, but it sits in the mailbox and in backups.”</p></div>
+<div class="qa"><p class="q">How long does your board report take?</p>
+<p class="a">“The quarterly one, about a full day, because I check branch numbers against the sheet. Monthly I send a short summary to the CEO, maybe two hours.”</p></div>
+<div class="qa"><p class="q">(After the demo) What stands out? What worries you?</p>
+<p class="a">“The OTP block, I like a lot. The 24-hour target worries me. A cheque return or a loan NOC can’t be closed in 24 hours. If the screen shows red for half my cases, my staff will stop looking at it. And will RBI see this as our official register? Our auditors will ask.”</p></div>
+<div class="qa"><p class="q">Rank the decision drivers.</p>
+<p class="a">“Regulatory safety first, then ease for branch staff, then data in India, price, peer recommendation. AI features last. Honestly, AI makes the board nervous.”</p></div>
+
+<!-- S2 -->
+<h2>3. S2 · CEO, Tier 2 UCB (simulated)</h2>
+<div class="resp"><b>Brief:</b> 58, CEO of an 18-branch urban cooperative bank in Gujarat. Former nationalised-bank officer. Price-conscious; the board approves anything above a set limit.</div>
+<div class="qa"><p class="q">What do you worry about most in grievance handling?</p>
+<p class="a">“Inspection findings. Last inspection they wrote that our grievance process was ‘not adequately documented’. It’s a small line, but the board asked me about it for two meetings.”</p></div>
+<div class="qa"><p class="q">At what monthly price would this be too cheap to trust, a bargain, getting expensive, too expensive?</p>
+<p class="a">“Below ₹5,000 a month, I’d wonder who maintains it. ₹10–15,000 is reasonable for my size. At ₹30,000 I must take it to the board, and they will ask why not the core-banking vendor. Above ₹40,000, no.”</p></div>
+<div class="qa"><p class="q">Who else would need to see this?</p>
+<p class="a">“The IT committee, the auditor, and our core-banking vendor. If the vendor says it’s a security risk, it’s finished.”</p></div>
+<div class="qa"><p class="q">What would make you say yes quickly?</p>
+<p class="a">“Another cooperative bank using it. Our federation recommending it. A free trial with no data leaving India.”</p></div>
+
+<!-- S3 -->
+<h2 class="pb">4. S3 · Head of Customer Service, small finance bank (simulated)</h2>
+<div class="resp"><b>Brief:</b> 42, Head of Customer Service at a small finance bank with several hundred branches. Has a CRM, but the complaint module is old. Digitally confident.</div>
+<div class="qa"><p class="q">How do complaints reach you today?</p>
+<p class="a">“Call centre, branch, email, the app, social media and RBI’s CMS. Our CRM logs most of them, but the branch ones are still patchy. Volume isn’t the problem. Routing is: a microfinance complaint goes to the wrong desk and loses two days.”</p></div>
+<div class="qa"><p class="q">(After the demo) Would this replace your CRM?</p>
+<p class="a">“No. But the routing logic and the fraud flag are better than ours. If it could sit on top of our CRM and push cases into it, I’d listen. A separate system for staff to check, no.”</p></div>
+<div class="qa"><p class="q">The 24-hour target?</p>
+<p class="a">“We already have internal turnaround times by category: 24 hours for UPI, 7 days for loans. One number for everything won’t fly with my team.”</p></div>
+
+<!-- S4 -->
+<h2>5. S4 · General Manager, regional rural bank (simulated)</h2>
+<div class="resp"><b>Brief:</b> 55, General Manager (Customer Service) at a regional rural bank formed in the 2025 merger. Many branches, largely rural customers, sponsor bank influence on IT.</div>
+<div class="qa"><p class="q">What changed after the merger?</p>
+<p class="a">“Three banks, three ways of handling complaints. Now RBI and our sponsor bank want one process. It’s a good time to sell us something, but the sponsor bank’s IT team will decide.”</p></div>
+<div class="qa"><p class="q">How do your customers complain?</p>
+<p class="a">“Mostly in person, in the local language. Many can’t type. A web form alone won’t work. A branch staff member has to be able to lodge it for them, or there must be voice or WhatsApp.”</p></div>
+<div class="qa"><p class="q">(After the demo) What stands out?</p>
+<p class="a">“The chat in the local language is interesting if it really works in Odia or Bhojpuri, not just Hindi. The monthly report by branch would be more useful to me than by service.”</p></div>
+
+<!-- S5 -->
+<h2 class="pb">6. S5 · Complaints officer, Tier 2 UCB (simulated)</h2>
+<div class="resp"><b>Brief:</b> 29, one of three people handling complaints at an urban cooperative bank. Also does other back-office work. Daily user of whatever system is chosen.</div>
+<div class="qa"><p class="q">What takes most of your time?</p>
+<p class="a">“Chasing branches. ‘Did you call the customer? What did they say?’ And customers calling me for status. Writing the replies is the easy part.”</p></div>
+<div class="qa"><p class="q">(After the demo) Would you use this?</p>
+<p class="a">“The queue sorted by urgent and oldest, yes. The escalation to my manager after 4 hours without action, that’s scary. If I’m on leave, does it escalate my cases? Who covers?”</p></div>
+<div class="qa"><p class="q">What would make it fail?</p>
+<p class="a">“If branches still write in the register and don’t enter it here. Then I have two places to check, and it’s worse than today.”</p></div>
+
+<!-- S6 -->
+<h2>7. S6 · Customer, fraud victim (simulated)</h2>
+<div class="resp"><b>Brief:</b> 47, runs a small shop in a district town. Lost ₹12,000 after sharing a code with a caller claiming to be from the bank. Uses WhatsApp and UPI in Marathi.</div>
+<div class="qa"><p class="q">What did you do first?</p>
+<p class="a">“I went to the branch the next morning. They told me to call a number. That took a day. Nobody told me to block my card immediately.”</p></div>
+<div class="qa"><p class="q">(After seeing the form refuse an OTP) How does that make you feel?</p>
+<p class="a">“Good. If the bank’s own website stops me, I believe them when they say they’ll never ask. But I wouldn’t have found this website. I would go to the branch or call.”</p></div>
+
+<!-- S7 -->
+<h2>8. S7 · Customer, senior citizen and pensioner (simulated)</h2>
+<div class="resp"><b>Brief:</b> 71, retired teacher. Pension account and fixed deposits with a cooperative bank. Son helps with phone apps.</div>
+<div class="qa"><p class="q">How would you complain about an interest error on your FD?</p>
+<p class="a">“I would write a letter and give it at the branch. I want a stamped copy. A reference number on SMS would also do, if it comes immediately.”</p></div>
+<div class="qa"><p class="q">Would you use the chat?</p>
+<p class="a">“If my son sets it up, maybe. Large text, please. And I want to talk to a person if it’s about money.”</p></div>
+
+<!-- Synthesis -->
+<h2 class="pb">9. What the simulation suggests, hypothesis by hypothesis</h2>
+<p class="small">Every row is a <b>signal to test</b> in real interviews, not a finding.</p>
+<table>
+  <tr><th style="width:4%">#</th><th style="width:28%">Hypothesis (from the analysis)</th><th>Simulated signal</th><th style="width:20%">What to probe for real</th></tr>
+  <tr><td>1</td><td>Tier 2–3 UCBs track complaints on paper, email or Excel, with no live view of deadlines</td><td>Consistent in S1, S2 and S5. The bigger pain may be complaints that never reach head office at all.</td><td>“How many complaints never reach your sheet?”</td></tr>
+  <tr><td>2</td><td>Regulatory safety outranks price</td><td>S1 and S2 rank it first, but S2’s price ceiling is firm, and AI features ranked last.</td><td>Card sort; ask what would make the board say no.</td></tr>
+  <tr><td>3</td><td>₹30,000 a month fits a 25-branch UCB</td><td><b>At risk.</b> S2 put the comfortable range at ₹10–15,000 for 18 branches; ₹30,000 triggers board approval.</td><td>Van Westendorp with 8+ CEOs; ask each one’s approval limit.</td></tr>
+  <tr><td>4</td><td>The board report takes ≥ 4 hours by hand</td><td>Quarterly about a day; monthly about 2 hours (S1).</td><td>Ask about both monthly and quarterly reports.</td></tr>
+  <tr><td>5</td><td>Customers will lodge online if branches promote it</td><td><b>At risk.</b> S4, S6 and S7 default to the branch. Branch-assisted lodging looks essential.</td><td>Branch intercepts: “Would you let staff enter it for you?”</td></tr>
+  <tr><td>6</td><td>Customers trust a chat more when it refuses their OTP</td><td>Strong positive in S6; S7 wants a human for money issues.</td><td>Show the refusal; ask for trust on a 1–5 scale.</td></tr>
+  <tr><td>7</td><td>A 24-hour target is realistic for most complaints</td><td><b>Most at risk.</b> S1, S3 and S5 push back: cheques, loans and NOCs can’t close in 24 hours, and red clocks everywhere cause fatigue.</td><td>“What share of your cases close in a day? Which never could?”</td></tr>
+</table>
+
+<h2>10. Changes to the real interview guide</h2>
+<ul>
+  <li>Add: “How many complaints do you think never reach head office?” (S1)</li>
+  <li>Add: “What target would you set by category, for example UPI or loans?” (S1, S3)</li>
+  <li>Add: “Who approves a spend of ₹1 lakh, ₹3 lakh and ₹5 lakh a year?” (S2)</li>
+  <li>Add: “Would your core-banking vendor or sponsor bank need to approve this?” (S2, S4)</li>
+  <li>Add, for officers: “What happens to your cases when you’re on leave?” (S5)</li>
+  <li>Ask RRBs for their monthly report by branch as well as by service (S4).</li>
+  <li>Ask about RBI CMS: “Do complaints forwarded by RBI need to appear in the same queue?” (S3)</li>
+</ul>
+
+<h2>11. Product ideas to test, not to build yet</h2>
+<table>
+  <tr><th style="width:30%">Idea</th><th>Why it came up</th><th style="width:22%">Decide after</th></tr>
+  <tr><td>Per-category resolution targets (24 hours for UPI and ATM, longer for cheques and loans), keeping 30 days as the outer limit</td><td>The 24-hour target was the most contested point (S1, S3, S5)</td><td>Real interviews and pilot data</td></tr>
+  <tr><td>Branch-assisted lodging mode, with an SMS reference to the customer</td><td>Customers default to the branch (S4, S6, S7)</td><td>Branch intercepts</td></tr>
+  <tr><td>Leave cover, or assigning cases to a team rather than a person, before escalation</td><td>Officer fear of unfair escalation (S5)</td><td>Officer interviews</td></tr>
+  <tr><td>A lower-priced tier for UCBs with 10–25 branches</td><td>Price ceiling (S2)</td><td>Pricing survey</td></tr>
+  <tr><td>Report by branch; CMS-forwarded complaints in the same queue</td><td>S3, S4</td><td>SFB and RRB interviews</td></tr>
+</table>
+<p class="small" style="margin-top:14px">Prepared by Group 5. AI-simulated interviews, not primary research. Respondents are fictional.</p>
+
+</body>
+</html>

@@ -9,6 +9,8 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 | 3 | Product marketing strategy and execution plan | [Group5_Strategy_GTM_Execution_Plan.pdf](Group5_Strategy_GTM_Execution_Plan.pdf) (source: `strategy_gtm_execution_plan.html`) |
 | 4 | Presentation deck | https://claude.ai/artifact/DxmPEBWQ5KAMHrBd8zzFZG (15 slides with speaker notes; download as PowerPoint or PDF from the deck's Share › Export) |
 
+Optional supporting artefact (the brief allows these): [Group5_Simulated_Interviews.pdf](Group5_Simulated_Interviews.pdf). Seven AI-simulated stakeholder interviews used to rehearse the guide and stress-test hypotheses. Clearly labelled as not primary research.
+
 ## Before submitting
 
 - [x] Merge the `capstone/submission` branch into `main` and push, so the live site has the monthly report and `?demo` mode.
@@ -16,7 +18,7 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 - [ ] Run the nodal-officer interviews (guide in the segment analysis, section 11). Then replace the illustrative persona quotes and re-render the PDFs.
 - [x] Export the deck to PowerPoint and PDF (no specific LMS format required).
 - [x] Re-run `supabase/schema.sql` on the live database (24-hour escalations).
-- [ ] Redeploy the Edge Function (deployed as `dynamic-service`) from `supabase/functions/ai/index.ts` so the chat assistant mentions the 24-hour target.
+- [x] Redeploy the Edge Function (deployed as `dynamic-service`) from `supabase/functions/ai/index.ts` so the chat assistant mentions the 24-hour target.
 - [x] Repository is public.
 
 ## Re-rendering the PDFs after edits
