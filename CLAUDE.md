@@ -10,7 +10,7 @@ Core flows:
 
 1. **Lodge.** A customer picks one of 12 services and about 50 issues, or describes the problem to the AI complaint assistant, which fills in the form. They get a reference number like `GD-261017-K7QZ8M2P`, the 24-hour resolution target and the Day 30 final-reply date.
 2. **Track.** Reference number plus registered mobile shows status and history, and lets the customer reply when the bank asks for information.
-3. **Staff queue.** Officers sign in (invitation only) and see tiles, filters, a 24-hour clock per case (then Day X of 30), routing team and escalation level. They open a case, reveal contact details (logged), re-route it and send updates.
+3. **Staff queue.** Officers sign in (invitation only) and see tiles, filters, a clock per case against its own 24 or 48-hour target (then Day X of 30), routing team, allocated officer and escalation level. They open a case, reveal contact details (logged), re-route it and send updates. Team leads and above can reallocate a case and change its target.
 4. **Monthly report.** The staff console builds a monthly MIS summary (received, resolved, % within 24 hours and 30 days, average time, by service and team). It can be downloaded as CSV or printed to PDF for the board and RBI returns.
 
 Live site: https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/
@@ -46,8 +46,10 @@ No build step and no framework. Plain HTML, CSS and JavaScript on GitHub Pages, 
 - **No direct table access.** Add new data access as a checked `security definer` function in `schema.sql`, never as an RLS policy that exposes rows.
 - **Contact details stay masked** for staff unless revealed through `reveal_contact` (which logs the view). Exports and reports use the masked values.
 - **The AI never sees contact details** and never decides alone. Rules route first. AI may re-route once, and every AI decision is logged with its reason and can be overridden by staff.
-- **Two clocks.** `TARGET_H` (24 hours) is the bank's own resolution target and drives the case clock, the meter and the time-based escalations (4h no action → team lead, 12h → Principal Nodal Officer, 20h → Internal Ombudsman / GM). `SLA` (30 days) is RBI's legal deadline and drives the reply-by date and the Ombudsman route. Don't merge them.
-- **Escalation levels only go up.** The rules in `private.escalation_target` and `escalate()` in `DemoAPI` must match.
+- **Two clocks.** Each complaint's `targetHours` (24 or 48) is the bank's own resolution target and drives the case clock, the meter and the time-based escalations, which scale with it: no action for T/6 → team lead, open T/2 → Principal Nodal Officer, open 5T/6 → Internal Ombudsman / GM (4/12/20h for 24 hours, 8/24/40h for 48). At T it is recorded as a breach (`breached_at`) and the customer is told once. `SLA` (30 days) is RBI's legal deadline and drives the reply-by date and the Ombudsman route. Don't merge them.
+- **Targets: rules set, AI tightens, people extend.** `private.rule_target` / `ruleTarget()` give 48 hours only to the `COMPLEX_ISSUES` list; fraud and a customer's third complaint in 90 days are always 24. The receipt shows that target. AI may tighten 48 → 24 on its own but can only *suggest* 24 → 48; only a team lead or above can extend (the customer is told). Officers can never change their own target.
+- **Allocation is by rules.** `private.pick_officer` gives a complaint to the on-duty `officer` in its team with the fewest open complaints (under `max_open`), ties to whoever was given one least recently. Re-routing reallocates. Unallocated complaints are retried by `run_escalations`. Officers can only take unallocated complaints; leads and above can reallocate. Every allocation is logged.
+- **Escalation levels only go up.** The rules in `private.escalation_target` / `private.check_escalation` and `escalate()` in `DemoAPI` must match, as must `rule_target` / `ruleTarget()` and `pick_officer` / `pick()`.
 - **Escape all customer text** with `esc()` before inserting HTML.
 - **Keep the CSP** in `index.html` tight. Scripts come only from this site and the pinned, integrity-checked Supabase library.
 - **Cache-busting:** bump the `?v=` on `styles.css`, `config.js` or `app.js` in `index.html` when you change them.
@@ -59,6 +61,6 @@ There is no automated test suite. Before committing, walk through these in `?dem
 
 1. Lodge a UPI complaint and get a reference number. Type `OTP 123456` in the description: it must be flagged and block submission.
 2. Track it with the reference and mobile.
-3. Staff tab: tiles add up, the 2-hour KYC case shows “2h of 24h” with no escalation, the 6-hour UPI case is with the team lead (no action for 4 hours), and cases older than 20 hours are with the Internal Ombudsman / GM.
+3. Staff tab (demo signs you in as a team lead): tiles add up, every case shows its officer, the 2-hour KYC case shows “1h of 24h” with no escalation, the 6-hour UPI case is with the team lead (no action for 4 hours), the 30-hour NOC case shows “30h of 48h” with the Principal Nodal Officer, and 24-hour cases older than 20 hours are with the Internal Ombudsman / GM. Open the UPI case, allocate it to another officer and extend it to 48 hours: the customer gets a “little more time” message. Fraud cases can't be set to 48.
 4. Open a case, reveal contacts, re-route, send an update. A staff message asking for an OTP must be blocked.
-5. Monthly report: totals match the queue, and the locker case counts as resolved within 24 hours. CSV downloads and opens in Excel. Print preview shows only the report.
+5. Monthly report: totals match the queue, the locker case counts as resolved within target, and there is a By officer table. CSV downloads and opens in Excel. Print preview shows only the report.

@@ -233,17 +233,24 @@ risk:
 - medium: money is stuck or wrongly debited, or the customer is blocked from using their account.
 - low: everything else.
 
-reason: one short sentence for the bank's staff explaining the routing and risk. Don't copy names, phone numbers, account or card numbers, or any identifiers into it.`;
+reason: one short sentence for the bank's staff explaining the routing and risk. Don't copy names, phone numbers, account or card numbers, or any identifiers into it.
+
+target: the resolution target in hours, 24 or 48.
+- 24: the team can usually fix it inside the bank in a day: a wrong charge, a failed or stuck payment, a login problem, a card block, anything urgent or fraud-related.
+- 48: it usually needs another bank, an insurer, a court or registrar, physical documents, or several teams: returned property documents, foreclosure disputes, mis-selling, recovery-agent conduct.
+targetReason: a few words on why, with no identifiers.`;
 
 const ROUTE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["team", "risk", "fraudSuspected", "reason"],
+  required: ["team", "risk", "fraudSuspected", "reason", "target", "targetReason"],
   properties: {
     team: { type: "string", enum: Object.keys(TEAMS) },
     risk: { type: "string", enum: ["low", "medium", "high"] },
     fraudSuspected: { type: "boolean" },
     reason: { type: "string" },
+    target: { type: "integer", enum: [24, 48] },
+    targetReason: { type: "string" },
   },
 };
 
@@ -264,9 +271,12 @@ async function route(ref: string) {
   if (!out || !TEAMS[out.team]) return json({ skipped: true });
 
   const reason = String(out.reason || "").slice(0, 300);
+  const targetReason = String(out.targetReason || "").slice(0, 300);
   const { data, error: e2 } = await db.rpc("ai_apply_route", {
     p_ref: ref, p_team: out.team, p_risk: out.risk, p_fraud: !!out.fraudSuspected,
     p_reason: sensitiveKinds(reason).length ? "" : reason,
+    p_target: out.target === 48 ? 48 : 24,
+    p_target_reason: sensitiveKinds(targetReason).length ? "" : targetReason,
   });
   if (e2) throw e2;
   return json(data ?? { skipped: true });

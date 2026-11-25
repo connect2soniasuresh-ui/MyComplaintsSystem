@@ -70,6 +70,32 @@ create index if not exists complaints_mobile_idx on public.complaints(mobile, cr
 alter table public.complaint_events drop constraint if exists complaint_events_by_role_check;
 alter table public.complaint_events add constraint complaint_events_by_role_check check (by_role in ('customer','bank','system'));
 
+-- Officer allocation and per-complaint targets (safe to re-run).
+-- Staff profile: which team an officer works in, their role, how many open complaints they can hold.
+alter table public.staff add column if not exists display_name text;
+alter table public.staff add column if not exists team         text;                     -- team id; null = no complaints allocated
+alter table public.staff add column if not exists role         text not null default 'officer';
+alter table public.staff add column if not exists max_open     int  not null default 15;
+alter table public.staff add column if not exists on_duty      boolean not null default true;
+alter table public.staff drop constraint if exists staff_role_check;
+alter table public.staff add constraint staff_role_check check (role in ('officer','lead','pno','io'));
+alter table public.staff drop constraint if exists staff_max_open_check;
+alter table public.staff add constraint staff_max_open_check check (max_open between 1 and 500);
+alter table public.staff drop constraint if exists staff_display_name_check;
+alter table public.staff add constraint staff_display_name_check check (display_name is null or char_length(display_name) between 2 and 60);
+-- Each complaint: who it is allocated to, its resolution target (24 or 48 hours) and when it missed it.
+alter table public.complaints add column if not exists assigned_to           uuid references public.staff(user_id) on delete set null;
+alter table public.complaints add column if not exists assigned_by           text;              -- rules | staff
+alter table public.complaints add column if not exists target_hours          int  not null default 24;
+alter table public.complaints add column if not exists target_set_by         text not null default 'rules';  -- rules | ai | staff
+alter table public.complaints add column if not exists target_reason         text;
+alter table public.complaints add column if not exists target_suggested      int;               -- AI suggestion a team lead can apply
+alter table public.complaints add column if not exists target_suggest_reason text;
+alter table public.complaints add column if not exists breached_at           timestamptz;
+alter table public.complaints drop constraint if exists complaints_target_hours_check;
+alter table public.complaints add constraint complaints_target_hours_check check (target_hours in (24, 48));
+create index if not exists complaints_assigned_idx on public.complaints(assigned_to) where status <> 'resolved';
+
 -- Per-caller limit on AI requests (keys are hashes, never raw IP addresses).
 create table if not exists public.ai_calls (
   key          text not null,
@@ -181,7 +207,7 @@ create or replace function private.customer_view(cid uuid) returns json
 language sql stable as $$
   select json_build_object('ref', ref, 'createdAt', created_at, 'updatedAt', updated_at, 'service', service,
     'issue', issue, 'urgent', urgent, 'status', status, 'amount', amount, 'description', description,
-    'history', private.history(id, false))
+    'targetHours', target_hours, 'history', private.history(id, false))
   from public.complaints where id = cid
 $$;
 
@@ -210,6 +236,72 @@ language sql immutable as $$
     else 'branch' end end
 $$;
 
+-- The resolution target for a new complaint. 48 hours for issues that usually need other teams
+-- or institutions; 24 hours otherwise. Fraud and repeat complaints are always 24 hours.
+-- Same list and order as ruleTarget() in app.js.
+create or replace function private.rule_target(p_issue text, p_urgent boolean, p_repeat boolean, out hrs int, out reason text)
+language plpgsql immutable as $$
+begin
+  if p_urgent then hrs := 24; reason := 'Fraud complaint: always 24 hours';
+  elsif p_repeat then hrs := 24; reason := 'Repeat complaint: always 24 hours';
+  elsif p_issue in ('Account closure delayed', 'Conduct of recovery agent', 'Interest rate not revised', 'Foreclosure or prepayment charges',
+                    'Property documents or NOC not returned', 'Cheque returned wrongly', 'Demand draft not issued', 'Product mis-sold',
+                    'Policy not issued', 'Redemption delayed', 'Allotment delayed', 'Nomination not registered') then
+    hrs := 48; reason := 'Usually needs other teams or institutions: 48 hours';
+  else hrs := 24; reason := 'Standard 24-hour target';
+  end if;
+end $$;
+
+-- Earlier complaints from the same mobile in the 90 days before this one.
+create or replace function private.repeat_count(c public.complaints) returns int
+language sql stable as $$
+  select count(*)::int from public.complaints o where o.mobile = c.mobile and o.id <> c.id
+     and o.created_at > c.created_at - interval '90 days' and o.created_at <= c.created_at
+$$;
+
+create or replace function private.staff_name(uid uuid) returns text
+language sql stable as $$
+  select coalesce(s.display_name, split_part(u.email, '@', 1))
+  from public.staff s join auth.users u on u.id = s.user_id where s.user_id = uid
+$$;
+
+create or replace function private.open_count(uid uuid) returns int
+language sql stable as $$
+  select count(*)::int from public.complaints where assigned_to = uid and status <> 'resolved'
+$$;
+
+-- The on-duty officer in a team with the fewest open complaints and room for more.
+-- Ties go to whoever was given a complaint least recently. Null if nobody is free.
+create or replace function private.pick_officer(p_team text) returns uuid
+language sql stable as $$
+  select s.user_id from public.staff s
+   where s.team = p_team and s.role = 'officer' and s.on_duty and private.open_count(s.user_id) < s.max_open
+   order by private.open_count(s.user_id),
+            (select max(c.created_at) from public.complaints c where c.assigned_to = s.user_id) nulls first, s.user_id
+   limit 1
+$$;
+
+-- Allocates a complaint to an officer in its current team, by rules, and logs it.
+-- p_quiet skips the "nobody free" note, for the background job that retries unallocated complaints.
+create or replace function private.allocate(cid uuid, p_quiet boolean default false) returns void
+language plpgsql as $$
+declare v_team text; v_officer uuid;
+begin
+  select team into v_team from public.complaints where id = cid;
+  v_officer := private.pick_officer(v_team);
+  if v_officer is null then
+    update public.complaints set assigned_to = null, assigned_by = null where id = cid;
+    if not p_quiet then
+      insert into public.complaint_events (complaint_id, by_role, note)
+      values (cid, 'system', 'No officer in ' || private.team_name(v_team) || ' is on duty with room for more complaints. Waiting in the team queue.');
+    end if;
+    return;
+  end if;
+  update public.complaints set assigned_to = v_officer, assigned_by = 'rules' where id = cid;
+  insert into public.complaint_events (complaint_id, by_role, note)
+  values (cid, 'system', 'Allocated to ' || private.staff_name(v_officer) || ': fewest open complaints in ' || private.team_name(v_team) || '.');
+end $$;
+
 -- "5 hours" up to 47 hours, then "3 days". Matches dur() in app.js.
 create or replace function private.duration(h int) returns text
 language sql immutable as $$
@@ -217,27 +309,31 @@ language sql immutable as $$
 $$;
 
 -- The escalation matrix. Returns the level a complaint should be at now, and why.
+-- Time rules scale with the complaint's own target T (24 or 48 hours): no action for T/6 hours
+-- goes to the team lead, open T/2 to the Principal Nodal Officer, open 5T/6 to the Internal
+-- Ombudsman / GM. For 24 hours that is 4, 12 and 20; for 48 hours 8, 24 and 40.
+-- RBI's 30-day limit stays the outer deadline. Same rules as escalate() in app.js.
 create or replace function private.escalation_target(c public.complaints, out lvl int, out reason text)
 language plpgsql stable as $$
 declare hrs int := floor(extract(epoch from now() - c.created_at) / 3600);
+        t int := coalesce(c.target_hours, 24);
         last_at timestamptz := (select max(at) from public.complaint_events e where e.complaint_id = c.id and e.by_role <> 'system');
-        repeats int := (select count(*) from public.complaints o where o.mobile = c.mobile and o.id <> c.id
-                          and o.created_at > c.created_at - interval '90 days' and o.created_at <= c.created_at);
+        repeats int := private.repeat_count(c);
 begin
   lvl := 0; reason := null;
   if c.status = 'resolved' then return; end if;
-  -- Time rules follow the bank's 24-hour resolution target (RBI's 30-day limit is the outer deadline).
-  if    hrs >= 20 then lvl := 3; reason := 'Open ' || private.duration(hrs) || ' against the 24-hour target';
-  elsif hrs >= 12 then lvl := 2; reason := 'Open ' || private.duration(hrs) || ' against the 24-hour target';
+  if    hrs >= t * 5 / 6 then lvl := 3; reason := 'Open ' || private.duration(hrs) || ' against the ' || t || '-hour target';
+  elsif hrs >= t / 2 then lvl := 2; reason := 'Open ' || private.duration(hrs) || ' against the ' || t || '-hour target';
   elsif c.urgent and coalesce(c.amount, 0) >= 100000 then lvl := 2; reason := 'Suspected fraud of ₹1 lakh or more';
   elsif repeats >= 2 then lvl := 2; reason := 'Third complaint from this customer in 90 days';
   elsif c.ai_risk = 'high' then lvl := 1; reason := 'AI rated this complaint high risk';
   elsif c.urgent then lvl := 1; reason := 'Fraud complaint';
-  elsif last_at < now() - interval '4 hours' then lvl := 1; reason := 'No action for 4 hours';
+  elsif last_at < now() - make_interval(hours => t / 6) then lvl := 1; reason := 'No action for ' || (t / 6) || ' hours';
   end if;
 end $$;
 
--- Raises one complaint's level if the matrix says so. Levels never go down.
+-- Raises one complaint's level if the matrix says so (levels never go down), and records a
+-- breach once it is still open at its target. The customer is told on breach.
 create or replace function private.check_escalation(cid uuid) returns void
 language plpgsql as $$
 declare c public.complaints; t record;
@@ -250,13 +346,26 @@ begin
     insert into public.complaint_events (complaint_id, by_role, note)
     values (cid, 'system', 'Escalated to ' || private.level_name(t.lvl) || ': ' || t.reason || '.');
   end if;
+  if c.status <> 'resolved' and c.breached_at is null and now() - c.created_at >= make_interval(hours => c.target_hours) then
+    update public.complaints set breached_at = now() where id = cid;
+    insert into public.complaint_events (complaint_id, by_role, note)
+    values (cid, 'system', 'Missed the ' || c.target_hours || '-hour target. Counted as a breach.');
+    insert into public.complaint_events (complaint_id, by_role, note)
+    values (cid, 'bank', 'We''re sorry we haven''t resolved this within our ' || c.target_hours || '-hour target. A senior officer is now handling it, '
+                         || 'and you''ll have our final reply by ' || to_char((c.created_at + interval '30 days') at time zone 'Asia/Kolkata', 'FMDD Mon YYYY')
+                         || ' at the latest.');
+  end if;
 end $$;
 
+-- Every 10 minutes (and whenever staff load the queue): escalations, breaches, and a retry
+-- for complaints that had no free officer when they arrived.
 create or replace function private.run_escalations() returns int
 language plpgsql as $$
 declare r record; n int := 0; before int;
 begin
-  for r in select id, level from public.complaints where status <> 'resolved' and level < 3 loop
+  for r in select id, level, assigned_to, team from public.complaints
+            where status <> 'resolved' and (level < 3 or breached_at is null or assigned_to is null) loop
+    if r.assigned_to is null and private.pick_officer(r.team) is not null then perform private.allocate(r.id, true); end if;
     before := r.level;
     perform private.check_escalation(r.id);
     if (select level from public.complaints where id = r.id) > before then n := n + 1; end if;
@@ -297,7 +406,7 @@ end $$;
 
 create or replace function public.lodge_complaint(p jsonb) returns json
 language plpgsql security definer set search_path = public, private, extensions as $$
-declare v_ref text; v_id uuid; v_mobile text; v_issue text := trim(p->>'issue'); v_urgent boolean;
+declare v_ref text; v_id uuid; v_mobile text; v_issue text := trim(p->>'issue'); v_urgent boolean; v_repeat boolean; v_t record;
 begin
   if coalesce((p->>'consent')::boolean, false) is not true then
     raise exception using errcode = '22023', message = 'consent_required';
@@ -312,19 +421,25 @@ begin
 
   v_ref := private.new_ref();
   v_urgent := v_issue ~* '^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)';
+  v_repeat := (select count(*) from public.complaints where mobile = v_mobile and created_at > now() - interval '90 days') >= 2;
+  v_t := private.rule_target(v_issue, v_urgent, v_repeat);
   insert into public.complaints (ref, service, issue, urgent, acct_last4, txn_date, amount, txn_ref,
-                                 description, outcome, name, mobile, email, consent_at, team, routed_by, route_reason)
+                                 description, outcome, name, mobile, email, consent_at, team, routed_by, route_reason,
+                                 target_hours, target_set_by, target_reason)
   values (v_ref, p->>'service', v_issue, v_urgent,
           nullif(p->>'acct', ''), nullif(p->>'txnDate', '')::date, nullif(p->>'amount', '')::numeric,
           nullif(trim(p->>'txnRef'), ''), trim(p->>'description'), nullif(trim(p->>'outcome'), ''),
           trim(p->>'name'), v_mobile, lower(nullif(trim(p->>'email'), '')), now(),
-          private.default_team(p->>'service', v_urgent), 'rules', 'Default team for this service')
+          private.default_team(p->>'service', v_urgent), 'rules', 'Default team for this service',
+          v_t.hrs, 'rules', v_t.reason)
   returning id into v_id;
 
   insert into public.complaint_events (complaint_id, by_role, status, note)
   values (v_id, 'customer', 'received', 'Complaint lodged.');
   insert into public.complaint_events (complaint_id, by_role, note)
-  values (v_id, 'system', 'Routed to ' || private.team_name(private.default_team(p->>'service', v_urgent)) || ' by rules.');
+  values (v_id, 'system', 'Routed to ' || private.team_name(private.default_team(p->>'service', v_urgent)) || ' by rules. '
+                          || 'Target ' || v_t.hrs || ' hours (' || v_t.reason || ').');
+  perform private.allocate(v_id);
   perform private.check_escalation(v_id);
   return private.customer_view(v_id);
 end $$;
@@ -370,6 +485,8 @@ begin
       'id', id, 'ref', ref, 'createdAt', created_at, 'updatedAt', updated_at, 'service', service,
       'issue', issue, 'urgent', urgent, 'amount', amount, 'status', status,
       'team', team, 'level', level, 'routedBy', routed_by,
+      'targetHours', target_hours, 'breachedAt', breached_at,
+      'assignedTo', assigned_to, 'assignee', private.staff_name(assigned_to),
       'name', name, 'mobile', private.mask(mobile)) order by created_at), '[]'::json)
     from public.complaints);
 end $$;
@@ -386,8 +503,89 @@ begin
       'contactViews', (select count(*) from public.contact_access_log l where l.complaint_id = c.id),
       'team', team, 'level', level, 'escalatedAt', escalated_at, 'routedBy', routed_by,
       'routeReason', route_reason, 'aiRisk', ai_risk,
+      'targetHours', target_hours, 'targetSetBy', target_set_by, 'targetReason', target_reason,
+      'targetSuggested', target_suggested, 'targetSuggestReason', target_suggest_reason, 'breachedAt', breached_at,
+      'assignedTo', assigned_to, 'assignee', private.staff_name(assigned_to), 'assignedBy', assigned_by,
       'history', private.history(id, true))
     from public.complaints c where id = p_id);
+end $$;
+
+-- ---------------------------------------------------------------- allocation and targets (staff)
+
+create or replace function private.staff_role() returns text
+language sql stable as $$ select role from public.staff where user_id = auth.uid() $$;
+
+-- Who is signed in, so the queue can offer "My complaints".
+create or replace function public.staff_me() returns json
+language plpgsql stable security definer set search_path = public, private as $$
+begin
+  perform private.require_staff();
+  return (select json_build_object('id', user_id, 'name', private.staff_name(user_id), 'role', role, 'team', team)
+          from public.staff where user_id = auth.uid());
+end $$;
+
+-- Staff with their team, role, duty and current load, for the reassign list and the workload view.
+create or replace function public.staff_officers() returns json
+language plpgsql stable security definer set search_path = public, private as $$
+begin
+  perform private.require_staff();
+  return (select coalesce(json_agg(json_build_object('id', user_id, 'name', private.staff_name(user_id), 'team', team,
+            'role', role, 'onDuty', on_duty, 'maxOpen', max_open, 'open', private.open_count(user_id))
+            order by team nulls last, private.staff_name(user_id)), '[]'::json)
+          from public.staff);
+end $$;
+
+-- Team leads and above can give a complaint to anyone on duty. An officer can only take an
+-- unallocated complaint for themselves.
+create or replace function public.staff_assign(p_id uuid, p_user uuid) returns json
+language plpgsql security definer set search_path = public, private as $$
+declare v_current uuid;
+begin
+  perform private.require_staff();
+  select assigned_to into v_current from public.complaints where id = p_id;
+  if private.staff_role() = 'officer' and (p_user is distinct from auth.uid() or v_current is not null) then
+    raise exception using errcode = '42501', message = 'not_allowed';
+  end if;
+  if not exists (select 1 from public.staff where user_id = p_user and on_duty) then
+    raise exception using errcode = '22023', message = 'invalid:officer';
+  end if;
+  update public.complaints set assigned_to = p_user, assigned_by = 'staff', updated_at = now()
+   where id = p_id and assigned_to is distinct from p_user;
+  if found then
+    insert into public.complaint_events (complaint_id, by_role, staff_id, note)
+    values (p_id, 'system', auth.uid(), 'Allocated to ' || private.staff_name(p_user) || ' by ' || private.staff_name(auth.uid()) || '.');
+  end if;
+  return public.staff_get(p_id);
+end $$;
+
+-- Team leads and above can change a complaint's target. Officers can't, so nobody extends
+-- their own deadline. Fraud complaints stay at 24 hours. Extending tells the customer.
+create or replace function public.staff_set_target(p_id uuid, p_hours int) returns json
+language plpgsql security definer set search_path = public, private as $$
+declare c public.complaints;
+begin
+  perform private.require_staff();
+  if coalesce(private.staff_role(), 'officer') = 'officer' then
+    raise exception using errcode = '42501', message = 'not_allowed';
+  end if;
+  if p_hours not in (24, 48) then raise exception using errcode = '22023', message = 'invalid:target'; end if;
+  select * into c from public.complaints where id = p_id for update;
+  if not found or c.target_hours = p_hours then return public.staff_get(p_id); end if;
+  if c.urgent and p_hours = 48 then raise exception using errcode = '22023', message = 'invalid:target_fraud'; end if;
+  update public.complaints
+     set target_hours = p_hours, target_set_by = 'staff', target_reason = 'Set by ' || private.staff_name(auth.uid()),
+         target_suggested = null, target_suggest_reason = null, updated_at = now()
+   where id = p_id;
+  insert into public.complaint_events (complaint_id, by_role, staff_id, note)
+  values (p_id, 'system', auth.uid(), 'Target changed to ' || p_hours || ' hours by ' || private.staff_name(auth.uid()) || '.');
+  if p_hours > c.target_hours and c.breached_at is null and c.status <> 'resolved' then
+    insert into public.complaint_events (complaint_id, by_role, staff_id, note)
+    values (p_id, 'bank', auth.uid(), 'We need a little more time to look into this. We now aim to resolve it within ' || p_hours
+            || ' hours of when you lodged it, and you''ll still have our final reply by '
+            || to_char((c.created_at + interval '30 days') at time zone 'Asia/Kolkata', 'FMDD Mon YYYY') || ' at the latest.');
+  end if;
+  perform private.check_escalation(p_id);
+  return public.staff_get(p_id);
 end $$;
 
 create or replace function public.staff_route(p_id uuid, p_team text) returns json
@@ -400,6 +598,7 @@ begin
   if found then
     insert into public.complaint_events (complaint_id, by_role, staff_id, note)
     values (p_id, 'system', auth.uid(), 'Re-routed to ' || private.team_name(p_team) || ' by staff.');
+    perform private.allocate(p_id);
   end if;
   return public.staff_get(p_id);
 end $$;
@@ -428,14 +627,22 @@ language sql stable security definer set search_path = public as $$
   where ref = upper(trim(p_ref)) and routed_by = 'rules' and created_at > now() - interval '2 days'
 $$;
 
-create or replace function public.ai_apply_route(p_ref text, p_team text, p_risk text, p_fraud boolean, p_reason text) returns json
+-- p_target is the AI's view of the target (24 or 48). The AI may tighten a 48-hour target to 24
+-- on its own; a longer target is only stored as a suggestion for a team lead, so a promise
+-- already made to the customer is never extended by AI. Older callers can leave it out.
+drop function if exists public.ai_apply_route(text, text, text, boolean, text);
+create or replace function public.ai_apply_route(p_ref text, p_team text, p_risk text, p_fraud boolean, p_reason text,
+                                                 p_target int default null, p_target_reason text default null) returns json
 language plpgsql security definer set search_path = public, private as $$
-declare c public.complaints; v_reason text := left(trim(coalesce(p_reason, '')), 300);
+declare c public.complaints; v_old_team text; v_reason text := left(trim(coalesce(p_reason, '')), 300);
+        v_treason text := left(trim(coalesce(p_target_reason, '')), 300);
 begin
-  if private.team_name(p_team) is null or p_risk not in ('low','medium','high') then
+  if private.team_name(p_team) is null or p_risk not in ('low','medium','high') or coalesce(p_target, 24) not in (24, 48) then
     raise exception using errcode = '22023', message = 'invalid:route';
   end if;
   perform private.assert_clean('reason', v_reason);
+  perform private.assert_clean('reason', v_treason);
+  select team into v_old_team from public.complaints where ref = upper(trim(p_ref)) and routed_by = 'rules';
   update public.complaints
      set team = case when p_fraud or urgent then 'fraud' else p_team end,
          urgent = urgent or coalesce(p_fraud, false), ai_risk = p_risk,
@@ -447,6 +654,22 @@ begin
   values (c.id, 'system', 'AI routed to ' || private.team_name(c.team) || ' (risk: ' || p_risk || ')'
                           || case when p_fraud then ', flagged as possible fraud' else '' end
                           || case when v_reason <> '' then '. ' || v_reason else '' end || '.');
+  if c.team is distinct from v_old_team then perform private.allocate(c.id); end if;
+
+  if c.target_set_by = 'rules' then
+    if (c.urgent or p_target = 24) and c.target_hours = 48 then
+      update public.complaints set target_hours = 24, target_set_by = 'ai',
+             target_reason = coalesce(nullif(v_treason, ''), case when c.urgent then 'Fraud complaint: always 24 hours' end)
+       where id = c.id;
+      insert into public.complaint_events (complaint_id, by_role, note)
+      values (c.id, 'system', 'AI tightened the target to 24 hours' || case when v_treason <> '' then ': ' || v_treason else '' end || '.');
+    elsif p_target = 48 and c.target_hours = 24 and not c.urgent and private.repeat_count(c) < 2 then
+      update public.complaints set target_suggested = 48, target_suggest_reason = nullif(v_treason, '') where id = c.id;
+      insert into public.complaint_events (complaint_id, by_role, note)
+      values (c.id, 'system', 'AI suggests a 48-hour target' || case when v_treason <> '' then ': ' || v_treason else '' end
+                              || '. A team lead can apply it.');
+    end if;
+  end if;
   perform private.check_escalation(c.id);
   return json_build_object('team', c.team, 'level', (select level from public.complaints where id = c.id));
 end $$;
@@ -479,14 +702,16 @@ revoke all on all functions in schema private from public, anon, authenticated;
 revoke all on function public.lodge_complaint(jsonb), public.track_complaint(text, text), public.customer_reply(text, text, text),
                        public.is_staff(), public.staff_list(), public.staff_get(uuid), public.reveal_contact(uuid),
                        public.staff_update(uuid, text, text), public.staff_route(uuid, text),
-                       public.ai_take(text, int), public.ai_route_get(text), public.ai_apply_route(text, text, text, boolean, text)
+                       public.staff_me(), public.staff_officers(), public.staff_assign(uuid, uuid), public.staff_set_target(uuid, int),
+                       public.ai_take(text, int), public.ai_route_get(text), public.ai_apply_route(text, text, text, boolean, text, int, text)
   from public, anon, authenticated;
 grant execute on function public.lodge_complaint(jsonb), public.track_complaint(text, text), public.customer_reply(text, text, text)
   to anon, authenticated;
 grant execute on function public.is_staff(), public.staff_list(), public.staff_get(uuid), public.reveal_contact(uuid),
-                          public.staff_update(uuid, text, text), public.staff_route(uuid, text)
+                          public.staff_update(uuid, text, text), public.staff_route(uuid, text),
+                          public.staff_me(), public.staff_officers(), public.staff_assign(uuid, uuid), public.staff_set_target(uuid, int)
   to authenticated;
-grant execute on function public.ai_take(text, int), public.ai_route_get(text), public.ai_apply_route(text, text, text, boolean, text)
+grant execute on function public.ai_take(text, int), public.ai_route_get(text), public.ai_apply_route(text, text, text, boolean, text, int, text)
   to service_role;
 grant usage on schema private to postgres;
 
@@ -495,6 +720,11 @@ grant usage on schema private to postgres;
 update public.complaints set team = private.default_team(service, urgent), routed_by = 'rules',
        route_reason = 'Default team for this service'
  where team is null;
+
+-- Complaints already open past their target when targets were introduced count as breached,
+-- without sending customers a late apology for something that happened before this release.
+update public.complaints set breached_at = created_at + make_interval(hours => target_hours)
+ where breached_at is null and status <> 'resolved' and now() - created_at >= make_interval(hours => target_hours);
 
 -- ---------------------------------------------------------------- scheduled escalations
 -- Runs the escalation matrix every 10 minutes. If pg_cron isn't available, escalations
@@ -513,3 +743,10 @@ end $$;
 --      insert into public.staff (user_id) select id from auth.users where email = 'officer@yourbank.example';
 -- To remove someone:
 --      delete from public.staff where user_id = (select id from auth.users where email = 'officer@yourbank.example');
+-- 3. Set their profile so complaints are allocated to them. Teams: cards, payments, digital, loans,
+--    accounts, branch, wealth, records, fraud. Roles: officer, lead (team lead), pno (Principal
+--    Nodal Officer), io (Internal Ombudsman / GM). Only officers are allocated complaints; leads
+--    and above can reassign complaints and change targets.
+--      update public.staff set display_name = 'Asha Patil', team = 'payments', role = 'officer', max_open = 15
+--       where user_id = (select id from auth.users where email = 'officer@yourbank.example');
+--    Off duty (no new complaints): update public.staff set on_duty = false where user_id = ...;

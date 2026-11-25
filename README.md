@@ -34,6 +34,12 @@ In the Staff tab, **Monthly report** summarises any month: complaints received a
      ```sql
      insert into public.staff (user_id) select id from auth.users where email = 'officer@yourbank.example';
      ```
+   - Set their profile so complaints are allocated to them. Teams: `cards`, `payments`, `digital`, `loans`, `accounts`, `branch`, `wealth`, `records`, `fraud`. Roles: `officer`, `lead` (team lead), `pno` (Principal Nodal Officer), `io` (Internal Ombudsman / GM). Only officers are allocated complaints. Leads and above can reallocate complaints and change targets.
+     ```sql
+     update public.staff set display_name = 'Asha Patil', team = 'payments', role = 'officer', max_open = 15
+      where user_id = (select id from auth.users where email = 'officer@yourbank.example');
+     ```
+     Set `on_duty = false` when someone is away, so new complaints go to colleagues.
 5. Open **Project Settings → API**. Copy the **Project URL** and the **anon public** key into `config.js`. Never use the `service_role` key in the website.
 6. Commit and push. GitHub Pages updates in about a minute.
 

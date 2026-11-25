@@ -22,8 +22,21 @@ const OTHER_ISSUE = "Something else (not listed)", OTHER_PREFIX = "Other – ";
 SERVICES.forEach(s => s.issues.push(OTHER_ISSUE));
 const SVC = Object.fromEntries(SERVICES.map(s=>[s.id,s]));
 const STATUS = {received:"Received", review:"Under review", info:"Waiting for you", resolved:"Resolved"};
-// SLA: RBI's 30-day final-reply deadline. TARGET_H: the bank's own 24-hour resolution target, well inside it.
+// SLA: RBI's 30-day final-reply deadline. Each complaint also has the bank's own resolution target
+// (targetHours: 24 or 48), well inside it. TARGET_H is the default target.
 const SLA = 30, TARGET_H = 24, DAY = 864e5, HOUR = 36e5, IDLE_MS = 15*60*1000;
+const ROLES = {officer:"Complaints officer", lead:"Team lead", pno:"Principal Nodal Officer", io:"Internal Ombudsman / GM"};
+const SET_BY = {rules:"Rules", ai:"AI", staff:"Staff"};
+// Issues that usually need other teams or institutions get 48 hours. Same list and order as private.rule_target in schema.sql.
+const COMPLEX_ISSUES = ["Account closure delayed","Conduct of recovery agent","Interest rate not revised","Foreclosure or prepayment charges",
+  "Property documents or NOC not returned","Cheque returned wrongly","Demand draft not issued","Product mis-sold",
+  "Policy not issued","Redemption delayed","Allotment delayed","Nomination not registered"];
+function ruleTarget(issue, urgent, repeat){
+  if (urgent) return [24, "Fraud complaint: always 24 hours"];
+  if (repeat) return [24, "Repeat complaint: always 24 hours"];
+  if (COMPLEX_ISSUES.includes(issue)) return [48, "Usually needs other teams or institutions: 48 hours"];
+  return [24, "Standard 24-hour target"];
+}
 const TEAMS = {cards:"Cards & ATMs", payments:"Payments & UPI", digital:"Digital banking", loans:"Loans & recovery", accounts:"Accounts & deposits", branch:"Branch operations", wealth:"Insurance & investments", records:"KYC & records", fraud:"Fraud cell"};
 const LEVELS = ["Complaints officer", "Team lead", "Principal Nodal Officer", "Internal Ombudsman / GM"];
 const ROUTED_BY = {rules:"Rules", ai:"AI", staff:"Staff"};
@@ -37,17 +50,19 @@ const inr = n => n==null||n==="" ? "—" : "₹" + Number(n).toLocaleString("en-
 const daysOpen = c => Math.floor(((c.status==="resolved" ? new Date(c.updatedAt) : new Date()) - new Date(c.createdAt))/DAY);
 const isLate = c => c.status!=="resolved" && daysOpen(c) > SLA;
 const hoursOpen = c => Math.floor(((c.status==="resolved" ? new Date(c.updatedAt) : new Date()) - new Date(c.createdAt))/HOUR);
-const isOverdue = c => c.status!=="resolved" && hoursOpen(c) >= TARGET_H;
+const targetOf = c => Number(c.targetHours) || TARGET_H;
+const isOverdue = c => c.status!=="resolved" && hoursOpen(c) >= targetOf(c);
+const inTarget = c => hoursOpen(c) < targetOf(c);
 const dur = h => h < 48 ? `${h} hour${h===1?"":"s"}` : `${Math.floor(h/24)} days`;
 const pill = s => `<span class="pill s-${esc(s)}">${esc(STATUS[s])}</span>`;
 function clock(c){
-  const d = daysOpen(c), h = hoursOpen(c);
+  const d = daysOpen(c), h = hoursOpen(c), t = targetOf(c);
   if (c.status==="resolved") return `<span class="clock">Closed in ${dur(h)}</span>`;
   if (isLate(c)) return `<span class="clock late">${d-SLA} day${d-SLA===1?"":"s"} past 30</span>`;
-  return isOverdue(c) ? `<span class="clock late">Past 24h · Day ${d} of 30</span>` : `<span class="clock">${h}h of 24h</span>`;
+  return isOverdue(c) ? `<span class="clock late">Past ${t}h · Day ${d} of 30</span>` : `<span class="clock">${h}h of ${t}h</span>`;
 }
 function meter(c){
-  const pct = c.status==="resolved" ? 100 : Math.min(100, hoursOpen(c)/TARGET_H*100);
+  const pct = c.status==="resolved" ? 100 : Math.min(100, hoursOpen(c)/targetOf(c)*100);
   return `<div class="meter ${isOverdue(c)?"late":""}"><i style="width:${pct}%"></i></div>`;
 }
 function normMobile(m){
@@ -145,6 +160,10 @@ const API = LIVE ? {
   reveal: id => rpc("reveal_contact", {p_id: id}),
   update: (id, status, note) => rpc("staff_update", {p_id: id, p_status: status, p_note: note}),
   route:  (id, team) => rpc("staff_route", {p_id: id, p_team: team}),
+  me:     () => rpc("staff_me"),
+  officers: () => rpc("staff_officers"),
+  assign: (id, user) => rpc("staff_assign", {p_id: id, p_user: user}),
+  setTarget: (id, hours) => rpc("staff_set_target", {p_id: id, p_hours: hours}),
   aiChat: messages => ai({action: "chat", messages}),
   aiRoute: ref => ai({action: "route", ref}),
 } : DemoAPI();
@@ -162,25 +181,52 @@ function DemoAPI(){
   const now = () => new Date().toISOString();
   const ref = (d = new Date()) => { const p = n=>String(n).padStart(2,"0"), A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     return `GD-${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}-` + Array.from(crypto.getRandomValues(new Uint8Array(8)), b => A[b%31]).join(""); };
-  const view = r => ({ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, status:r.status, amount:r.amount, description:r.description, history:r.history.filter(h => h.by !== "system")});
+  // Sample staff. In demo mode you are signed in as the team lead, so you can reassign complaints and change targets.
+  const staff = [
+    ["o1","Asha Patil","payments"],["o2","Rohan Iyer","payments"],["o3","Meera Joshi","cards"],["o4","Imran Shaikh","fraud"],
+    ["o5","Neha Kulkarni","accounts"],["o6","Suresh Rao","accounts"],["o7","Kavya Menon","loans"],["o8","Arvind Desai","digital"],
+    ["o9","Lata Pawar","branch"],["o10","Farid Khan","wealth"],["o11","Pooja Nair","records"],
+  ].map(([id, name, team]) => ({id, name, team, role:"officer", onDuty:true, maxOpen:15}));
+  const ME = {id:"lead", name:"Demo team lead", role:"lead", team:null};
+  staff.push({...ME, onDuty:true, maxOpen:15});
+  const nameOf = id => staff.find(s => s.id === id)?.name || null;
+  const openCount = id => rows.filter(r => r.assignedTo === id && r.status !== "resolved").length;
+  const view = r => ({ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, status:r.status, amount:r.amount, description:r.description, targetHours:r.targetHours, history:r.history.filter(h => h.by !== "system")});
   const find = (rf, m) => rows.find(r => r.ref === String(rf).trim().toUpperCase() && r.mobile === normMobile(m));
   const clean = (t, field, staff) => { const k = scan(t, staff); if (k.length) throw {code:"22023", message:`sensitive:${field}:${k.join(", ")}`}; };
+  const staffFields = r => ({targetHours:r.targetHours, breachedAt:r.breachedAt, assignedTo:r.assignedTo, assignee:nameOf(r.assignedTo)});
   const get = async id => { const r = rows.find(x => x.id === id);
     return {...view(r), id:r.id, acct:r.acct, txnDate:r.txnDate, txnRef:r.txnRef, outcome:r.outcome, name:r.name, mobile:maskPhone(r.mobile), email:maskEmail(r.email), contactViews:r.views,
-      team:r.team, level:r.level, routedBy:r.routedBy, routeReason:r.routeReason, aiRisk:null, history:r.history}; };
-  // Same rules as private.default_team and private.escalation_target in schema.sql.
+      team:r.team, level:r.level, routedBy:r.routedBy, routeReason:r.routeReason, aiRisk:null, ...staffFields(r), assignedBy:r.assignedBy,
+      targetSetBy:r.targetSetBy, targetReason:r.targetReason, targetSuggested:null, targetSuggestReason:null, history:r.history}; };
+  const repeats = r => rows.filter(o => o !== r && o.mobile === r.mobile && Date.parse(o.createdAt) <= Date.parse(r.createdAt) && Date.parse(o.createdAt) > Date.parse(r.createdAt) - 90*DAY).length;
+  // Same rules as private.default_team, private.pick_officer, private.allocate, private.escalation_target and private.check_escalation in schema.sql.
   const defaultTeam = (svc, urgent) => urgent ? "fraud" : ({acct:"accounts", debit:"cards", credit:"cards", pay:"payments", digital:"digital", loan:"loans", dep:"accounts", chq:"accounts", branch:"branch", third:"wealth", locker:"branch", kyc:"records"})[svc] || "branch";
+  const lastGiven = id => Math.max(0, ...rows.filter(r => r.assignedTo === id).map(r => Date.parse(r.createdAt)));
+  const pick = team => staff.filter(s => s.team === team && s.role === "officer" && s.onDuty && openCount(s.id) < s.maxOpen)
+    .sort((a, b) => openCount(a.id) - openCount(b.id) || lastGiven(a.id) - lastGiven(b.id) || a.id.localeCompare(b.id))[0] || null;
+  const allocate = (r, at = now()) => {
+    const s = pick(r.team);
+    r.assignedTo = s ? s.id : null; r.assignedBy = s ? "rules" : null;
+    r.history.push({at, by:"system", status:null, note: s ? `Allocated to ${s.name}: fewest open complaints in ${TEAMS[r.team]}.`
+      : `No officer in ${TEAMS[r.team]} is on duty with room for more complaints. Waiting in the team queue.`});
+  };
   const escalate = r => {
     if (r.status === "resolved") return;
-    const hrs = Math.floor((Date.now() - Date.parse(r.createdAt)) / HOUR);
+    const hrs = Math.floor((Date.now() - Date.parse(r.createdAt)) / HOUR), t = r.targetHours;
     const lastAt = Math.max(...r.history.filter(h => h.by !== "system").map(h => Date.parse(h.at)));
-    const repeats = rows.filter(o => o !== r && o.mobile === r.mobile && Date.parse(o.createdAt) <= Date.parse(r.createdAt) && Date.parse(o.createdAt) > Date.parse(r.createdAt) - 90*DAY).length;
-    const [lvl, why] = hrs >= 20 ? [3, `Open ${dur(hrs)} against the 24-hour target`] : hrs >= 12 ? [2, `Open ${dur(hrs)} against the 24-hour target`]
-      : r.urgent && Number(r.amount) >= 100000 ? [2, "Suspected fraud of ₹1 lakh or more"] : repeats >= 2 ? [2, "Third complaint from this customer in 90 days"]
-      : r.urgent ? [1, "Fraud complaint"] : lastAt < Date.now() - 4*HOUR ? [1, "No action for 4 hours"] : [0, ""];
+    const [lvl, why] = hrs >= Math.floor(t*5/6) ? [3, `Open ${dur(hrs)} against the ${t}-hour target`] : hrs >= t/2 ? [2, `Open ${dur(hrs)} against the ${t}-hour target`]
+      : r.urgent && Number(r.amount) >= 100000 ? [2, "Suspected fraud of ₹1 lakh or more"] : repeats(r) >= 2 ? [2, "Third complaint from this customer in 90 days"]
+      : r.urgent ? [1, "Fraud complaint"] : lastAt < Date.now() - (t/6)*HOUR ? [1, `No action for ${t/6} hours`] : [0, ""];
     if (lvl > r.level){ r.level = lvl; r.history.push({at:now(), by:"system", status:null, note:`Escalated to ${LEVELS[lvl]}: ${why}.`}); }
+    if (!r.breachedAt && hrs >= t){
+      const at = new Date(Math.min(Date.now(), Date.parse(r.createdAt) + t*HOUR)).toISOString();
+      r.breachedAt = at;
+      r.history.push({at, by:"system", status:null, note:`Missed the ${t}-hour target. Counted as a breach.`});
+      r.history.push({at, by:"bank", status:null, note:`We're sorry we haven't resolved this within our ${t}-hour target. A senior officer is now handling it, and you'll have our final reply by ${fmtDate(new Date(Date.parse(r.createdAt) + SLA*DAY).toISOString())} at the latest.`});
+    }
   };
-  // Sample cases (backdated) so the staff queue, escalations and monthly report have something to show.
+  // Sample cases (backdated) so the staff queue, allocation, escalations and monthly report have something to show.
   [[0.25,"pay","Debited but not credited to beneficiary",2500,"received","Priya Nair","9000000001","Paid ₹2,500 by UPI to a grocery shop. Money left my account but the shop says it never arrived."],
    [3,"debit","Unauthorised transaction on debit card",145000,"review","Ramesh Patil","9000000002","Three transactions I never made appeared on my debit card overnight. I have blocked the card."],
    [9,"loan","EMI debited wrongly",18400,"review","Sunita Deshmukh","9000000003","My home loan EMI was debited twice this month."],
@@ -189,15 +235,19 @@ function DemoAPI(){
    [12,"locker","Rent dispute",3500,"resolved","Vijay Joshi","9000000006","Locker rent was charged twice for the same year."],
    [40,"digital","Cannot log in",null,"resolved","Kavita Rao","9000000007","The mobile app says my account is locked every time I log in."],
    [33,"credit","Billing dispute",7800,"review","Farah Khan","9000000009","My credit card bill shows a hotel booking of ₹7,800 that was cancelled and refunded by the hotel."],
+   [1.25,"loan","Property documents or NOC not returned",null,"review","Deepak Joshi","9000000010","I closed my home loan in September but the bank has still not returned my property documents or given the NOC."],
    [0.08,"kyc","Name, address or mobile change pending",null,"received","Arjun Mehta","9000000008","I submitted my new address at the branch a month ago but it still shows the old one."],
-  ].forEach(([age, service, issue, amount, status, name, mobile, description], i) => {
+  ].sort((a, b) => b[0] - a[0]).forEach(([age, service, issue, amount, status, name, mobile, description], i) => {
     const at = d => new Date(Date.now() - d*DAY).toISOString(), t = at(age), urgent = /^unauthorised/i.test(issue), team = defaultTeam(service, urgent);
+    const [targetHours, targetReason] = ruleTarget(issue, urgent, false);
     const r = {service, issue, amount, description, name, mobile, acct:"", txnDate:t.slice(0,10), txnRef:"", outcome:"", email:"", id:crypto.randomUUID(), ref:ref(new Date(t)), views:0, urgent,
-      team, level:0, routedBy:"rules", routeReason:"Default team for this service", createdAt:t, updatedAt:t, status,
-      history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules.`}]};
+      team, level:0, routedBy:"rules", routeReason:"Default team for this service", targetHours, targetSetBy:"rules", targetReason, breachedAt:null,
+      createdAt:t, updatedAt:t, status:"received",
+      history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules. Target ${targetHours} hours (${targetReason}).`}]};
+    allocate(r, t);
     if (status !== "received"){ const u = at(Math.max(0, age - (status === "resolved" ? (service === "locker" ? 0.5 : Math.min(age, 6 + i)) : Math.min(age / 2, 2))));
       r.history.push({at:u, by:"bank", status, note: status === "resolved" ? "We have refunded the amount to your account." : status === "info" ? "Please tell us the cheque number and date." : "We are looking into this with the team concerned."});
-      r.updatedAt = u; }
+      r.status = status; r.updatedAt = u; }
     rows.push(r);
   });
   rows.forEach(escalate);
@@ -205,13 +255,15 @@ function DemoAPI(){
   return {
     async lodge(c){
       ["issue","description","outcome","txnRef","name"].forEach(f => clean(c[f], f));
-      const t = now(), urgent = /^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)/i.test(c.issue), team = defaultTeam(c.service, urgent);
-      const r = {...c, id:crypto.randomUUID(), ref:ref(), mobile:normMobile(c.mobile), views:0, urgent,
-        team, level:0, routedBy:"rules", routeReason:"Default team for this service",
-        createdAt:t, updatedAt:t, status:"received", history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules.`}]};
-      rows.push(r); escalate(r); return view(r);
+      const t = now(), mobile = normMobile(c.mobile), urgent = /^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)/i.test(c.issue), team = defaultTeam(c.service, urgent);
+      const repeat = rows.filter(o => o.mobile === mobile && Date.parse(o.createdAt) > Date.now() - 90*DAY).length >= 2;
+      const [targetHours, targetReason] = ruleTarget(c.issue, urgent, repeat);
+      const r = {...c, id:crypto.randomUUID(), ref:ref(), mobile, views:0, urgent,
+        team, level:0, routedBy:"rules", routeReason:"Default team for this service", targetHours, targetSetBy:"rules", targetReason, breachedAt:null,
+        createdAt:t, updatedAt:t, status:"received", history:[{at:t, by:"customer", status:"received", note:"Complaint lodged."}, {at:t, by:"system", status:null, note:`Routed to ${TEAMS[team]} by rules. Target ${targetHours} hours (${targetReason}).`}]};
+      rows.push(r); allocate(r); escalate(r); return view(r);
     },
-    async track(rf, m){ const r = find(rf, m); return r ? view(r) : null; },
+    async track(rf, m){ const r = find(rf, m); if (r) escalate(r); return r ? view(r) : null; },
     async reply(rf, m, note){
       const r = find(rf, m); if (!r) return null;
       if (r.status !== "info") throw {code:"22023", message:"not_waiting"};
@@ -219,14 +271,35 @@ function DemoAPI(){
       r.history.push({at:t, by:"customer", status:"review", note}); r.status = "review"; r.updatedAt = t; return view(r);
     },
     async signIn(){ signed = true; }, async signOut(){ signed = false; },
-    async session(){ return signed ? {user:{email:"demo staff"}} : null; },
+    async session(){ return signed ? {user:{email:"demo team lead"}} : null; },
     async isStaff(){ return signed; },
-    async list(){ rows.forEach(escalate); return rows.map(r => ({id:r.id, ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, amount:r.amount, status:r.status, team:r.team, level:r.level, routedBy:r.routedBy, name:r.name, mobile:maskPhone(r.mobile)})); },
+    async me(){ return ME; },
+    async officers(){ return staff.map(s => ({id:s.id, name:s.name, team:s.team, role:s.role, onDuty:s.onDuty, maxOpen:s.maxOpen, open:openCount(s.id)})); },
+    async list(){ rows.forEach(r => { if (!r.assignedTo && r.status !== "resolved" && pick(r.team)) allocate(r); escalate(r); });
+      return rows.map(r => ({id:r.id, ref:r.ref, createdAt:r.createdAt, updatedAt:r.updatedAt, service:r.service, issue:r.issue, urgent:r.urgent, amount:r.amount, status:r.status, team:r.team, level:r.level, routedBy:r.routedBy, ...staffFields(r), name:r.name, mobile:maskPhone(r.mobile)})); },
     get,
     async route(id, team){
       const r = rows.find(x => x.id === id);
-      if (r.team !== team){ r.team = team; r.routedBy = "staff"; r.routeReason = "Re-routed by staff"; r.history.push({at:now(), by:"system", status:null, note:`Re-routed to ${TEAMS[team]} by staff.`}); }
+      if (r.team !== team){ r.team = team; r.routedBy = "staff"; r.routeReason = "Re-routed by staff"; r.history.push({at:now(), by:"system", status:null, note:`Re-routed to ${TEAMS[team]} by staff.`}); allocate(r); }
       return get(id);
+    },
+    async assign(id, user){
+      const r = rows.find(x => x.id === id), s = staff.find(x => x.id === user && x.onDuty);
+      if (!s) throw {code:"22023", message:"invalid:officer"};
+      if (r.assignedTo !== user){ r.assignedTo = user; r.assignedBy = "staff"; r.updatedAt = now(); r.history.push({at:now(), by:"system", status:null, note:`Allocated to ${s.name} by ${ME.name}.`}); }
+      return get(id);
+    },
+    async setTarget(id, hours){
+      const r = rows.find(x => x.id === id);
+      if (![24, 48].includes(hours)) throw {code:"22023", message:"invalid:target"};
+      if (r.targetHours === hours) return get(id);
+      if (r.urgent && hours === 48) throw {code:"22023", message:"invalid:target_fraud"};
+      const t = now(), longer = hours > r.targetHours;
+      r.targetHours = hours; r.targetSetBy = "staff"; r.targetReason = `Set by ${ME.name}`; r.updatedAt = t;
+      r.history.push({at:t, by:"system", status:null, note:`Target changed to ${hours} hours by ${ME.name}.`});
+      if (longer && !r.breachedAt && r.status !== "resolved")
+        r.history.push({at:t, by:"bank", status:null, note:`We need a little more time to look into this. We now aim to resolve it within ${hours} hours of when you lodged it, and you'll still have our final reply by ${fmtDate(new Date(Date.parse(r.createdAt) + SLA*DAY).toISOString())} at the latest.`});
+      escalate(r); return get(id);
     },
     async aiChat(){ throw {code:"ai", message:"demo"}; },
     async aiRoute(){ return {skipped:true}; },
@@ -246,6 +319,9 @@ function errText(e){
   if (m === "consent_required") return "Tick the confirmation box to submit.";
   if (m === "invalid:mobile") return "Enter a valid 10-digit mobile number.";
   if (m === "not_waiting") return "Sangam Bank isn't waiting for a reply on this complaint any more. Search again to see its latest status.";
+  if (m === "not_allowed") return "Only a team lead or above can do that. You can take complaints that aren't allocated yet.";
+  if (m === "invalid:target_fraud") return "Fraud complaints always keep the 24-hour target.";
+  if (m === "invalid:officer") return "That officer isn't on duty. Choose someone else.";
   if (m === "not_staff" || e?.code === "42501") return "This account isn't on the staff list. Ask your administrator to add you.";
   if (/invalid login credentials/i.test(m)) return "The email or password is wrong.";
   if (e?.code === "23514" || e?.code === "22P02" || e?.code === "22007") return "Some details weren't accepted. Check the form and try again.";
@@ -329,7 +405,8 @@ function showReceipt(c, mobile){
   r.innerHTML = `<div class="receipt">
     <p class="label">Complaint received · ${esc(fmtDT(c.createdAt))}</p>
     <div class="ref">${esc(c.ref)}</div>
-    <p style="margin:0">Write this reference number down. You'll need it and your mobile number to track the complaint. We aim to resolve it within <strong>24 hours</strong>, and you'll have our final reply by <strong>${esc(fmtDate(new Date(Date.parse(c.createdAt)+SLA*DAY).toISOString()))}</strong> at the latest.</p>
+    <p style="margin:0">Write this reference number down. You'll need it and your mobile number to track the complaint. We aim to resolve it within <strong>${targetOf(c)} hours</strong>, and you'll have our final reply by <strong>${esc(fmtDate(new Date(Date.parse(c.createdAt)+SLA*DAY).toISOString()))}</strong> at the latest.</p>
+    ${targetOf(c) > TARGET_H ? `<p class="muted" style="margin:0;font-size:13.5px">This kind of complaint usually needs checks with other teams or institutions, so our target is ${targetOf(c)} hours instead of ${TARGET_H}.</p>` : ""}
     ${c.urgent ? `<div class="alert bad"><strong>Marked urgent</strong>Unauthorised-transaction complaints go to the fraud team first.</div>` : ""}
     <div class="actions"><button class="btn" id="goTrack" type="button">Track this complaint</button><button class="btn ghost" id="another" type="button">Lodge another</button></div>
   </div>`;
@@ -459,7 +536,8 @@ function renderTracked(){
 }
 
 /* ---------- staff ---------- */
-const S = { rows: [], email: "" };
+const S = { rows: [], email: "", me: null, officers: [] };
+const canManage = () => !!S.me && S.me.role !== "officer";   // team leads and above
 let idleTimer, pollTimer;
 async function staffEnter(){
   const session = await API.session().catch(() => null);
@@ -468,7 +546,9 @@ async function staffEnter(){
   if (!ok){ await API.signOut(); showSignin("This account isn't on the staff list. Ask your administrator to add you."); return; }
   S.email = session.user?.email || "";
   $("#staffSignin").hidden = true; $("#staffQueue").hidden = false;
-  $("#staffWho").textContent = `Signed in as ${S.email}. You'll be signed out after 15 minutes without activity.`;
+  // Profiles power allocation; if the database predates them, the queue still works without.
+  S.me = await API.me().catch(() => null);
+  $("#staffWho").textContent = `Signed in as ${S.me?.name || S.email}${S.me ? ` (${ROLES[S.me.role] || S.me.role})` : ""}. You'll be signed out after 15 minutes without activity.`;
   armIdle(); loadQueue();
   clearInterval(pollTimer);
   pollTimer = setInterval(() => { if (!$("#view-staff").hidden && !$("#dlg").open) loadQueue(); }, 60000);
@@ -503,7 +583,11 @@ function armIdle(){
 
 async function loadQueue(){
   if (!S.rows.length) $("#queueBody").innerHTML = `<p class="loading">Loading complaints…</p>`;
-  try { S.rows = await API.list() || []; renderQueue(); }
+  try {
+    S.rows = await API.list() || [];
+    S.officers = S.me ? await API.officers().catch(() => []) || [] : [];
+    fillWho(); renderQueue();
+  }
   catch(ex){
     if (ex?.code === "42501" || ex?.message === "not_staff") return signOut(errText(ex));
     $("#queueBody").innerHTML = `<div class="alert bad">${esc(errText(ex))}</div>`;
@@ -513,37 +597,49 @@ async function loadQueue(){
 $("#fStatus").innerHTML = `<option value="">All statuses</option><option value="open">All open</option>` + Object.entries(STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
 $("#fSvc").innerHTML = `<option value="">All services</option>` + SERVICES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
 $("#fTeam").innerHTML = `<option value="">All teams</option>` + Object.entries(TEAMS).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("");
-["#q","#fStatus","#fSvc","#fTeam"].forEach(s => $(s).addEventListener("input", renderQueue));
+["#q","#fStatus","#fSvc","#fTeam","#fWho"].forEach(s => $(s).addEventListener("input", renderQueue));
+function fillWho(){
+  const sel = $("#fWho"), keep = sel.value;
+  sel.hidden = !S.me;
+  const people = S.officers.filter(o => o.role === "officer");
+  sel.innerHTML = `<option value="">Everyone</option>` + (S.me?.role === "officer" ? `<option value="me">My complaints</option>` : "") +
+    `<option value="none">Not allocated</option>` + people.map(o => `<option value="${esc(o.id)}">${esc(o.name)} · ${o.open} open</option>`).join("");
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+const whoLine = c => !S.me ? "" : `<br><span class="muted" style="font-size:12px">${c.assignee ? esc(c.assignee) : "Not allocated"}</span>`;
 const lvlBadge = l => l > 0 ? `<span class="lvl l${l}">↑ ${esc(LEVELS[l])}</span>` : "";
 const teamLine = c => `<span class="team">${esc(TEAMS[c.team] || "Unrouted")}${c.routedBy ? `<span class="by">${esc(ROUTED_BY[c.routedBy] || c.routedBy)}</span>` : ""}</span>`;
 
 function renderQueue(){
   const rows = S.rows, open = rows.filter(c => c.status!=="resolved"), month = new Date().toISOString().slice(0,7);
   $("#queueCount").hidden = false; $("#queueCount").textContent = open.length;
+  $("#tiles").classList.toggle("t7", !!S.me);
   $("#tiles").innerHTML = [
     ["Open", open.length, false],
     ["Urgent and open", open.filter(c=>c.urgent).length, open.some(c=>c.urgent)],
     ["Escalated", open.filter(c=>c.level>0).length, open.some(c=>c.level>=2)],
-    ["Past 24-hour target", open.filter(isOverdue).length, open.some(isOverdue)],
+    ["Past target", open.filter(isOverdue).length, open.some(isOverdue)],
     ["Past 30 days", open.filter(isLate).length, open.some(isLate)],
+    ...(S.me ? [["Not allocated", open.filter(c=>!c.assignedTo).length, open.some(c=>!c.assignedTo)]] : []),
     ["Resolved this month", rows.filter(c=>c.status==="resolved"&&c.updatedAt.startsWith(month)).length, false],
   ].map(([l,n,a])=>`<div class="tile ${a?"alarm":""}"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("");
 
-  const q = $("#q").value.trim().toLowerCase(), fs = $("#fStatus").value, fv = $("#fSvc").value, ft = $("#fTeam").value;
+  const q = $("#q").value.trim().toLowerCase(), fs = $("#fStatus").value, fv = $("#fSvc").value, ft = $("#fTeam").value, fw = $("#fWho").value;
   const shown = rows.filter(c =>
     (!fs || (fs==="open" ? c.status!=="resolved" : c.status===fs)) && (!fv || c.service===fv) && (!ft || c.team===ft) &&
+    (!fw || (fw==="none" ? !c.assignedTo : fw==="me" ? c.assignedTo===S.me?.id : c.assignedTo===fw)) &&
     (!q || `${c.ref} ${c.name}`.toLowerCase().includes(q))
   ).sort((a,b) => ((a.status==="resolved") - (b.status==="resolved")) || (b.urgent - a.urgent) || ((b.level||0) - (a.level||0)) || a.createdAt.localeCompare(b.createdAt));
 
   const body = $("#queueBody");
   if (!rows.length){ body.innerHTML = `<div class="empty"><h3>The queue is empty</h3><p>New complaints appear here when customers submit them, most urgent and oldest first.</p></div>`; return; }
   if (!shown.length){ body.innerHTML = `<div class="empty"><h3>No complaints match</h3><p>Clear the search or filters to see the full queue.</p></div>`; return; }
-  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th>Team and level</th><th style="text-align:right">Amount</th><th>Clock (24h target)</th><th>Status</th></tr></thead><tbody>` +
+  body.innerHTML = `<div class="tablebox"><table><thead><tr><th>Reference</th><th>Customer</th><th>Service and issue</th><th>Team, officer and level</th><th style="text-align:right">Amount</th><th>Clock (target)</th><th>Status</th></tr></thead><tbody>` +
     shown.map(c => `<tr data-id="${esc(c.id)}" tabindex="0">
       <td><span class="ref">${esc(c.ref)}</span><br><span class="muted" style="font-size:12px">${esc(fmtDate(c.createdAt))}</span></td>
       <td>${esc(c.name)}<br><span class="muted mono" style="font-size:12px">${esc(c.mobile)}</span></td>
       <td>${c.urgent?'<span class="urgent">Urgent · </span>':""}${esc(SVC[c.service]?.name)}<br><span class="muted">${esc(c.issue)}</span></td>
-      <td>${teamLine(c)}${c.level > 0 ? "<br>" + lvlBadge(c.level) : ""}</td>
+      <td>${teamLine(c)}${whoLine(c)}${c.level > 0 ? "<br>" + lvlBadge(c.level) : ""}</td>
       <td class="num">${inr(c.amount)}</td>
       <td>${clock(c)}${meter(c)}</td>
       <td>${pill(c.status)}</td></tr>`).join("") + `</tbody></table></div>`;
@@ -578,11 +674,16 @@ function renderDetail(){
           ${c.routeReason ? `<dt>Why</dt><dd>${esc(c.routeReason)}</dd>` : ""}
           ${c.aiRisk ? `<dt>AI risk</dt><dd>${esc(c.aiRisk[0].toUpperCase() + c.aiRisk.slice(1))}</dd>` : ""}
           <dt>Escalation level</dt><dd>${esc(LEVELS[c.level || 0])} ${lvlBadge(c.level || 0)}</dd>
+          ${S.me ? `<dt>Allocated to</dt><dd>${c.assignee ? `${esc(c.assignee)} <span class="muted">· by ${esc(SET_BY[c.assignedBy] || c.assignedBy || "rules")}</span>` : "Not allocated: no officer in this team is on duty with room"}</dd>` : ""}
+          <dt>Target</dt><dd>${targetOf(c)} hours${c.targetReason ? ` <span class="muted">· ${esc(c.targetReason)}${c.targetSetBy ? ` (${esc(SET_BY[c.targetSetBy] || c.targetSetBy)})` : ""}</span>` : ""}</dd>
+          ${c.breachedAt ? `<dt>Breach</dt><dd><span class="clock late">Missed the ${targetOf(c)}-hour target</span> <span class="muted">· ${esc(fmtDT(c.breachedAt))}</span></dd>` : ""}
+          ${c.targetSuggested ? `<dt>AI suggests</dt><dd>${Number(c.targetSuggested)} hours${c.targetSuggestReason ? ` <span class="muted">· ${esc(c.targetSuggestReason)}</span>` : ""}. A team lead can apply it below.</dd>` : ""}
         </dl>
         <div class="row">
           <div class="field"><label for="d-team">Re-route to</label><select id="d-team">${Object.entries(TEAMS).map(([k,v])=>`<option value="${k}" ${k===c.team?"selected":""}>${esc(v)}</option>`).join("")}</select></div>
           <div class="actions"><button class="btn ghost" id="d-route" type="button">Re-route</button><span class="err" id="d-rerr" role="alert"></span></div>
         </div>
+        ${allocControls(c)}
       </div>
       <div><p class="label" style="margin-bottom:8px">History</p><ul class="hist">${c.history.map(h=>`<li class="${h.by==="system"?"sys":""}"><time>${esc(fmtDT(h.at))}</time><div><span class="who">${esc(WHO[h.by] || h.by)}</span>${h.status?` · ${esc(STATUS[h.status])}`:""}<p>${esc(h.note)}</p></div></li>`).join("")}</ul></div>
       <div style="display:grid;gap:12px;border-top:1px solid var(--line);padding-top:18px">
@@ -606,6 +707,21 @@ function renderDetail(){
     try { detail = await API.route(c.id, team); renderDetail(); $("#d-note").value = keep; loadQueue(); }
     catch(ex){ $("#d-rerr").textContent = errText(ex); $("#d-route").disabled = false; }
   };
+  const keepNote = async (fn, errSel, btn) => {
+    const keep = $("#d-note").value; btn.disabled = true;
+    try { detail = await fn(); renderDetail(); $("#d-note").value = keep; loadQueue(); }
+    catch(ex){ $(errSel).textContent = errText(ex); btn.disabled = false; }
+  };
+  const ab = $("#d-assign");
+  if (ab) ab.onclick = () => keepNote(() => API.assign(c.id, $("#d-officer").value), "#d-aerr", ab);
+  const tb = $("#d-take");
+  if (tb) tb.onclick = () => keepNote(() => API.assign(c.id, S.me.id), "#d-aerr", tb);
+  const sb2 = $("#d-settarget");
+  if (sb2) sb2.onclick = () => {
+    const h = Number($("#d-target").value);
+    if (h === targetOf(c)){ $("#d-aerr").textContent = `The target is already ${h} hours.`; return; }
+    keepNote(() => API.setTarget(c.id, h), "#d-aerr", sb2);
+  };
   $("#d-send").onclick = async () => {
     const note = $("#d-note").value.trim(), status = $("#d-status").value, de = $("#d-err"); de.textContent = "";
     if (!note){ de.textContent = "Write a message for the customer before sending."; return; }
@@ -614,6 +730,26 @@ function renderDetail(){
     try { detail = await API.update(c.id, status, note); renderDetail(); loadQueue(); }
     catch(ex){ de.textContent = errText(ex); $("#d-send").disabled = false; }
   };
+}
+
+// Team leads and above: allocate to any on-duty officer and change the target. Officers: take an unallocated complaint.
+function allocControls(c){
+  if (!S.me || c.status === "resolved") return "";
+  if (!canManage()){
+    return !c.assignedTo ? `<div class="actions"><button class="btn ghost" id="d-take" type="button">Take this complaint</button><span class="err" id="d-aerr" role="alert"></span></div>` : "";
+  }
+  const people = S.officers.filter(o => o.role === "officer" && o.onDuty)
+    .sort((a, b) => (b.team === c.team) - (a.team === c.team) || a.open - b.open);
+  const suggested = c.targetSuggested || targetOf(c);
+  return `<div class="row">
+      <div class="field"><label for="d-officer">Allocate to</label><select id="d-officer">${people.map(o => `<option value="${esc(o.id)}" ${o.id===c.assignedTo?"selected":""}>${esc(o.name)} · ${esc(TEAMS[o.team] || "No team")} · ${o.open}/${o.maxOpen} open</option>`).join("")}</select></div>
+      <div class="actions"><button class="btn ghost" id="d-assign" type="button">Allocate</button></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="d-target">Target</label><select id="d-target">${[24, 48].map(h => `<option value="${h}" ${h===suggested?"selected":""} ${h===48 && c.urgent ? "disabled" : ""}>${h} hours${h===48 && c.urgent ? " (not for fraud)" : ""}</option>`).join("")}</select></div>
+      <div class="actions"><button class="btn ghost" id="d-settarget" type="button">Change target</button><span class="err" id="d-aerr" role="alert"></span></div>
+    </div>
+    <p class="muted" style="margin:0;font-size:12.5px">Extending the target tells the customer. Escalations follow the new target; levels already reached stay.</p>`;
 }
 
 /* ---------- monthly MIS report ----------
@@ -627,19 +763,20 @@ function openReport(month){
   month = month || months[0];
   const got = S.rows.filter(c => monthKey(c.createdAt) === month);
   const closed = S.rows.filter(c => c.status === "resolved" && monthKey(c.updatedAt) === month);
-  const inTime = closed.filter(c => daysOpen(c) <= SLA).length, inTarget = closed.filter(c => hoursOpen(c) < TARGET_H).length;
+  const inTime = closed.filter(c => daysOpen(c) <= SLA).length, nInTarget = closed.filter(inTarget).length;
   const avgH = closed.length ? closed.reduce((s, c) => s + hoursOpen(c), 0) / closed.length : null;
   const avg = avgH == null ? "—" : avgH < 48 ? avgH.toFixed(1) + " h" : (avgH / 24).toFixed(1) + " days";
   const open = S.rows.filter(c => c.status !== "resolved");
   const pct = (n, d) => d ? Math.round(n / d * 100) + "%" : "—";
-  const tiles = [["Received", got.length], ["Resolved", closed.length], ["Resolved within 24 hours", pct(inTarget, closed.length)], ["Resolved within 30 days", pct(inTime, closed.length)],
-    ["Average time to resolve", avg], ["Open now", open.length], ["Open past 24 hours", open.filter(isOverdue).length], ["Open past 30 days", open.filter(isLate).length]];
+  const tiles = [["Received", got.length], ["Resolved", closed.length], ["Resolved within target", pct(nInTarget, closed.length)], ["Resolved within 30 days", pct(inTime, closed.length)],
+    ["Average time to resolve", avg], ["Open now", open.length], ["Open past target", open.filter(isOverdue).length], ["Open past 30 days", open.filter(isLate).length]];
+  const t48 = got.filter(c => targetOf(c) === 48).length;
   const breakdown = (title, keys, label, pick) => {
     const lines = keys.map(k => {
       const g = got.filter(c => pick(c) === k), r = closed.filter(c => pick(c) === k), o = open.filter(c => pick(c) === k);
       return [label(k), g.length, r.length, o.length, o.filter(isOverdue).length, o.filter(isLate).length];
     }).filter(l => l[1] + l[2] + l[3]);
-    return `<div><p class="label" style="margin-bottom:6px">${title}</p>${lines.length ? `<div class="tablebox" style="margin-top:0"><table class="mis"><thead><tr><th>${title.split(" ").pop()}</th><th class="num">Received</th><th class="num">Resolved</th><th class="num">Open now</th><th class="num">Past 24h</th><th class="num">Past 30</th></tr></thead><tbody>${
+    return `<div><p class="label" style="margin-bottom:6px">${title}</p>${lines.length ? `<div class="tablebox" style="margin-top:0"><table class="mis"><thead><tr><th>${title.split(" ").pop()}</th><th class="num">Received</th><th class="num">Resolved</th><th class="num">Open now</th><th class="num">Past target</th><th class="num">Past 30</th></tr></thead><tbody>${
       lines.map(l => `<tr><td>${esc(l[0])}</td>${l.slice(1).map(n => `<td class="num">${n}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted" style="margin:0">No complaints.</p>`}</div>`;
   };
   $("#dlg").innerHTML = `
@@ -650,9 +787,10 @@ function openReport(month){
         <div class="actions"><button class="btn" id="r-csv" type="button">Download CSV</button><button class="btn ghost" id="r-print" type="button">Print or save as PDF</button></div>
       </div>
       <div class="tiles mis-tiles">${tiles.map(([l, n]) => `<div class="tile"><span class="label">${l}</span><span class="n">${n}</span></div>`).join("")}</div>
-      <p class="muted" style="margin:0;font-size:12.5px">Received and resolved count complaints lodged or closed in ${esc(monthName(month))}. “Open now”, “Past 24h” and “Past 30” are as of ${esc(fmtDT(new Date().toISOString()))}. Urgent (fraud) complaints received: ${got.filter(c => c.urgent).length}. Escalated above complaints officer: ${got.filter(c => c.level > 0).length}.</p>
+      <p class="muted" style="margin:0;font-size:12.5px">Received and resolved count complaints lodged or closed in ${esc(monthName(month))}. “Open now”, “Past target” and “Past 30” are as of ${esc(fmtDT(new Date().toISOString()))}. Each complaint has its own target of 24 or 48 hours; ${t48} of those received had 48 hours. Urgent (fraud) complaints received: ${got.filter(c => c.urgent).length}. Escalated above complaints officer: ${got.filter(c => c.level > 0).length}. Missed their target: ${got.filter(c => c.breachedAt).length}.</p>
       ${breakdown("By service", SERVICES.map(s => s.id), k => SVC[k].name, c => c.service)}
       ${breakdown("By team", Object.keys(TEAMS), k => TEAMS[k], c => c.team)}
+      ${S.me ? breakdown("By officer", [...new Set(S.rows.map(c => c.assignee || "Not allocated"))].sort(), k => k, c => c.assignee || "Not allocated") : ""}
     </div>`;
   $("#dlgX").onclick = () => $("#dlg").close();
   $("#r-month").onchange = e => openReport(e.target.value);
@@ -663,9 +801,9 @@ function openReport(month){
 function downloadCsv(rows, month){
   // Leading = + - @ would run as a formula in Excel, so those cells get a ' prefix.
   const cell = v => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const head = ["Reference","Lodged","Service","Issue","Urgent","Amount (INR)","Team","Routed by","Escalation level","Status","Hours open","Past 24-hour target","Days open","Past 30 days","Customer","Mobile (masked)"];
+  const head = ["Reference","Lodged","Service","Issue","Urgent","Amount (INR)","Team","Routed by","Allocated to","Escalation level","Status","Target (hours)","Hours open","Missed target","Days open","Past 30 days","Customer","Mobile (masked)"];
   const lines = rows.map(c => [c.ref, c.createdAt.slice(0,10), SVC[c.service]?.name, c.issue, c.urgent ? "Yes" : "No", c.amount ?? "", TEAMS[c.team] || "",
-    ROUTED_BY[c.routedBy] || "", LEVELS[c.level || 0], STATUS[c.status], hoursOpen(c), isOverdue(c) ? "Yes" : "No", daysOpen(c), isLate(c) ? "Yes" : "No", c.name, c.mobile]);
+    ROUTED_BY[c.routedBy] || "", c.assignee || "", LEVELS[c.level || 0], STATUS[c.status], targetOf(c), hoursOpen(c), (c.breachedAt || isOverdue(c)) ? "Yes" : "No", daysOpen(c), isLate(c) ? "Yes" : "No", c.name, c.mobile]);
   const blob = new Blob(["﻿" + [head, ...lines].map(l => l.map(cell).join(",")).join("\r\n")], {type: "text/csv;charset=utf-8"});
   const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(blob), download: `grievance-desk-${month}.csv`});
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
