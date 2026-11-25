@@ -37,6 +37,9 @@ const SERVICES = [
   {id:"locker", name:"Safe deposit lockers", issues:["Allotment delayed","Rent dispute","Cannot access locker"]},
   {id:"kyc", name:"KYC, nomination & records", issues:["KYC update pending","Nomination not registered","Name, address or mobile change pending"]},
 ];
+// Last choice under every service, as in app.js; the customer's short summary goes in issueOther.
+const OTHER_ISSUE = "Something else (not listed)";
+SERVICES.forEach(s => s.issues.push(OTHER_ISSUE));
 const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
 const TEAMS: Record<string, string> = {
   cards:"Cards & ATMs", payments:"Payments & UPI", digital:"Digital banking", loans:"Loans & recovery",
@@ -129,7 +132,7 @@ const CHAT_SYSTEM = `You are the complaint assistant on Sangam Bank's Grievance 
 Use plain, simple English. If the customer writes in Hindi or another Indian language, reply in that language, but write the draft fields in English.
 
 Collect:
-- service and issue: choose exactly one service id and one issue from the catalogue below. If nothing fits well, pick the closest.
+- service and issue: choose exactly one service id and one issue from the catalogue below. If none of that service's issues fits, choose "${OTHER_ISSUE}" and put a summary of the issue in a few plain words (under 100 characters) in issueOther. Never use it for an unauthorised transaction, money sent to the wrong account or phishing: use the fraud issue instead. Leave issueOther as "" otherwise.
 - description: a clear first-person account of what happened, written for the bank's complaints officer, using the customer's facts only (20 to 1000 characters). Never invent facts.
 - txnDate (YYYY-MM-DD), amount (digits only, rupees), txnRef (UTR, RRN or cheque number), acctLast4 (exactly the last 4 digits of the account or card), outcome (what would put it right). Ask for these only when they apply to this kind of problem. Use "" when unknown or not relevant.
 
@@ -155,10 +158,11 @@ const CHAT_SCHEMA = {
     draft: {
       type: "object",
       additionalProperties: false,
-      required: ["service", "issue", "description", "txnDate", "amount", "txnRef", "acctLast4", "outcome"],
+      required: ["service", "issue", "issueOther", "description", "txnDate", "amount", "txnRef", "acctLast4", "outcome"],
       properties: {
         service: { type: "string", enum: [...SERVICES.map(s => s.id), ""] },
         issue: { type: "string" },
+        issueOther: { type: "string" },
         description: { type: "string" },
         txnDate: { type: "string" },
         amount: { type: "string" },
@@ -201,6 +205,7 @@ async function chat(raw: unknown) {
   const draft = {
     service: svc ? svc.id : "",
     issue,                                                    // keeps the "!" fraud marker, as the form expects
+    issueOther: issue === OTHER_ISSUE ? clean(d.issueOther, 100) : "",
     description: clean(d.description, 3000),
     txnDate: /^\d{4}-\d{2}-\d{2}$/.test(d.txnDate) && d.txnDate <= today ? d.txnDate : "",
     amount: /^\d+(\.\d{1,2})?$/.test(String(d.amount).replace(/,/g, "")) ? String(d.amount).replace(/,/g, "") : "",
@@ -208,7 +213,8 @@ async function chat(raw: unknown) {
     acctLast4: /^\d{4}$/.test(d.acctLast4) ? d.acctLast4 : "",
     outcome: clean(d.outcome, 200),
   };
-  const ready = !!out.ready && !!draft.service && !!draft.issue && draft.description.length >= 20;
+  const ready = !!out.ready && !!draft.service && !!draft.issue && draft.description.length >= 20
+    && (draft.issue !== OTHER_ISSUE || draft.issueOther.length >= 3);
   return json({ reply, ready, draft });
 }
 

@@ -17,6 +17,9 @@ const SERVICES = [
   {id:"locker", name:"Safe deposit lockers", sub:"Allotment, rent, access", issues:["Allotment delayed","Rent dispute","Cannot access locker"]},
   {id:"kyc", name:"KYC, nomination & records", sub:"Updates and changes", issues:["KYC update pending","Nomination not registered","Name, address or mobile change pending"]},
 ];
+// Last choice under every service, for problems the list doesn't cover. The customer's own words are saved as "Other – …".
+const OTHER_ISSUE = "Something else (not listed)", OTHER_PREFIX = "Other – ";
+SERVICES.forEach(s => s.issues.push(OTHER_ISSUE));
 const SVC = Object.fromEntries(SERVICES.map(s=>[s.id,s]));
 const STATUS = {received:"Received", review:"Under review", info:"Waiting for you", resolved:"Resolved"};
 // SLA: RBI's 30-day final-reply deadline. TARGET_H: the bank's own 24-hour resolution target, well inside it.
@@ -201,7 +204,7 @@ function DemoAPI(){
 
   return {
     async lodge(c){
-      ["description","outcome","txnRef","name"].forEach(f => clean(c[f], f));
+      ["issue","description","outcome","txnRef","name"].forEach(f => clean(c[f], f));
       const t = now(), urgent = /^(unauthorised transaction|money sent to wrong account|phishing or fraud attempt)/i.test(c.issue), team = defaultTeam(c.service, urgent);
       const r = {...c, id:crypto.randomUUID(), ref:ref(), mobile:normMobile(c.mobile), views:0, urgent,
         team, level:0, routedBy:"rules", routeReason:"Default team for this service",
@@ -267,9 +270,13 @@ $("#svcGrid").innerHTML = SERVICES.map(s => `
 $("#svcGrid").addEventListener("change", e => {
   const s = SVC[e.target.value];
   $("#f-issue").innerHTML = `<option value="">Choose the issue</option>` + s.issues.map(i => `<option value="${esc(i)}">${esc(i.replace(/^!/,""))}</option>`).join("");
-  $("#fraudNote").hidden = true;
+  $("#fraudNote").hidden = true; showOther(false);
 });
-$("#f-issue").addEventListener("change", e => $("#fraudNote").hidden = !e.target.value.startsWith("!"));
+$("#f-issue").addEventListener("change", e => { $("#fraudNote").hidden = !e.target.value.startsWith("!"); showOther(e.target.value === OTHER_ISSUE); });
+function showOther(on){
+  $("#otherWrap").hidden = !on;
+  if (!on){ $("#f-other").value = ""; updateGuard($("#f-other")); }
+}
 
 $("#f-acct").addEventListener("input", e => {
   const d = e.target.value.replace(/\D/g,""), hint = $("#acctHint");
@@ -285,6 +292,8 @@ $("#form").addEventListener("submit", async e => {
   const problems = [];
   if (!svc) problems.push("choose a service");
   if (!issueRaw) problems.push("choose the issue");
+  const otherText = $("#f-other").value.trim().replace(/\s+/g, " ");
+  if (issueRaw === OTHER_ISSUE && otherText.length < 3) problems.push("tell us the issue in a few words");
   if (acct && !/^\d{4}$/.test(acct)) problems.push("enter exactly 4 digits for the account or card");
   if ($("#f-desc").value.trim().length < 20) problems.push("describe the problem in at least 20 characters");
   if (!/^[\p{L} .'-]{2,80}$/u.test($("#f-name").value.trim())) problems.push("enter your name using letters only");
@@ -297,7 +306,7 @@ $("#form").addEventListener("submit", async e => {
   if (problems.length){ err.textContent = "To submit, " + problems.join(", ") + "."; return; }
 
   const payload = {
-    service: svc, issue: issueRaw.replace(/^!/,""), acct, txnDate: $("#f-date").value,
+    service: svc, issue: issueRaw === OTHER_ISSUE ? OTHER_PREFIX + otherText : issueRaw.replace(/^!/,""), acct, txnDate: $("#f-date").value,
     amount: $("#f-amt").value, txnRef: $("#f-txn").value.trim(), description: $("#f-desc").value.trim(),
     outcome: $("#f-want").value.trim(), name: $("#f-name").value.trim(), mobile, email: em, consent: true,
   };
@@ -309,7 +318,7 @@ $("#form").addEventListener("submit", async e => {
     showReceipt(c, mobile);
     resetChat(); $("#draftNote").hidden = true;
     $("#form").reset(); $("#acctHint").textContent = "Only the last 4 digits"; $("#acctHint").className = "hint";
-    $("#f-issue").innerHTML = `<option value="">Choose a service first</option>`; $("#fraudNote").hidden = true;
+    $("#f-issue").innerHTML = `<option value="">Choose a service first</option>`; $("#fraudNote").hidden = true; showOther(false);
   } catch(ex) { err.textContent = errText(ex); }
   finally { btn.disabled = false; btn.textContent = "Submit complaint"; }
 });
@@ -387,6 +396,7 @@ function applyDraft(d){
   const radio = $(`#svc-${d.service}`); if (!radio) return;
   radio.checked = true; radio.dispatchEvent(new Event("change", {bubbles: true}));
   $("#f-issue").value = d.issue; $("#fraudNote").hidden = !d.issue.startsWith("!");
+  showOther(d.issue === OTHER_ISSUE); if (d.issue === OTHER_ISSUE) $("#f-other").value = d.issueOther || "";
   $("#f-acct").value = d.acctLast4 || ""; $("#f-date").value = d.txnDate || ""; $("#f-amt").value = d.amount || "";
   $("#f-txn").value = d.txnRef || ""; $("#f-desc").value = d.description || ""; $("#f-want").value = d.outcome || "";
   closeChat(); $("#assistCta").hidden = true; $("#draftNote").hidden = false;
