@@ -1,0 +1,6 @@
+bank,kind,branches,status,complaints_lodged,resolved_24h_pct,open_past_30,weekly_active_officers_pct,contact_reveals_per_case
+Sangam Bank,Urban cooperative bank,18,Paid,520,76,0,91,1.8
+"Bank B, Pune",Urban cooperative bank,12,Paid,410,72,0,86,2.1
+"Bank C, Chennai",Small finance bank,40,Paid,470,70,0,80,6.6
+"Bank D, Nashik",Urban cooperative bank,9,Paid,190,64,0,78,2.6
+"Bank E, Odisha",Regional rural bank,55,Pilot,160,61,0,70,2.0

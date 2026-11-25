@@ -9,6 +9,8 @@ Product Management with AI, IIM Calcutta. Deadline: 25 November 2026.
 | 3 | Product marketing strategy and execution plan | [Group5_Strategy_GTM_Execution_Plan.pdf](Group5_Strategy_GTM_Execution_Plan.pdf) (source: `strategy_gtm_execution_plan.html`) |
 | 4 | Presentation deck | https://claude.ai/artifact/DxmPEBWQ5KAMHrBd8zzFZG (15 slides with speaker notes; download as PowerPoint or PDF from the deck's Share › Export) |
 
+Metrics and dashboarding exercise: the **Grievance Desk Control Room**, live at https://connect2soniasuresh-ui.github.io/MyComplaintsSystem/control-room.html and as [Group5_Control_Room_Metrics_Dashboard.pdf](Group5_Control_Room_Metrics_Dashboard.pdf). It has 29 metrics (leading, financial, misuse and viability, tech health), each with its calculation and why it matters, plus best, average and worst scenarios with action plans. All figures are a labelled sample projection for January to June 2027, not real data. Rebuild after editing `control_room_data/*.csv` with `python capstone/build_control_room.py`.
+
 Optional supporting artefact (the brief allows these): [Group5_Simulated_Interviews.pdf](Group5_Simulated_Interviews.pdf). Seven AI-simulated stakeholder interviews used to rehearse the guide and stress-test hypotheses. Clearly labelled as not primary research.
 
 ## Before submitting

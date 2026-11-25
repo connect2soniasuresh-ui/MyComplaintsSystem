@@ -1,0 +1,7 @@
+month,complaints_lodged,qualified_leads,pilot_to_paid_pct,resolved_24h_pct,median_first_action_h,online_share_pct,ai_chat_share_pct,weekly_active_officers_pct,track_calls_change_pct,csat,arr_lakh,paying_banks,gross_margin_pct,cac_payback_months,logo_churn_pct,dso_days,confidential_blocked,confidential_leaks,contact_reveals_per_case,ai_override_pct,spam_dup_pct,reopened_pct,open_past_30,ai_cost_per_complaint_inr,uptime_pct,p95_api_ms,ai_error_pct,notif_delivery_pct,escalation_lag_min
+2027-01,410,9,0,52,5.1,34,12,71,-8,3.7,0,0,,,0,,38,0,1.2,31,2.1,3.1,0,0.62,99.95,620,2.4,93.5,3
+2027-02,690,14,33,58,3.8,41,16,76,-15,3.9,3.2,1,58,14,0,45,61,0,1.4,24,2.8,3.6,0,0.71,99.91,680,1.8,95.2,4
+2027-03,980,11,40,63,3.2,47,19,79,-22,4.0,6.6,2,68,10,0,52,84,0,1.6,19,3.4,4.2,1,0.78,99.62,910,4.1,96.8,12
+2027-04,1320,10,40,67,2.6,52,22,82,-29,4.1,10.1,3,74,8,0,61,109,1,1.9,15,3.9,5.8,0,0.85,99.97,840,1.2,97.4,6
+2027-05,1610,8,50,69,2.4,56,24,84,-34,4.1,13.4,4,78,7,0,58,127,0,2.4,13,4.2,7.4,0,0.88,99.93,790,0.9,97.9,4
+2027-06,1750,9,50,71,2.2,58,26,83,-37,4.2,13.4,4,79,7,0,64,140,0,3.3,12,4.0,8.9,0,0.91,99.96,760,0.8,98.3,3
